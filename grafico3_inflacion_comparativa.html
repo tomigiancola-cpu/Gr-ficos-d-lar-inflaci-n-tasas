@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inflación real vs REM vs implícita en bonos CER — 2026</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 32px 24px 24px;
+  }
+  .chart-kicker {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #185FA5;
+    margin-bottom: 6px;
+  }
+  .chart-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .chart-subtitle {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 18px;
+    line-height: 1.4;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #444;
+  }
+  .legend-line {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 320px;
+  }
+  .insight-strip {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0;
+    border: 0.5px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .insight-cell {
+    padding: 12px 14px;
+    border-right: 0.5px solid #e0e0e0;
+  }
+  .insight-cell:last-child { border-right: none; }
+  .insight-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 3px; }
+  .insight-val { font-size: 15px; font-weight: 700; color: #111; }
+  .insight-desc { font-size: 11px; color: #666; margin-top: 2px; line-height: 1.4; }
+  .note {
+    margin-top: 14px;
+    font-size: 11px;
+    color: #888;
+    border-top: 1px solid #e8e8e8;
+    padding-top: 10px;
+    line-height: 1.5;
+  }
+  .note strong { color: #555; }
+  .zona-label {
+    font-size: 11px;
+    color: #aaa;
+    text-align: right;
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="chart-kicker">Ámbito Financiero · Mercados</div>
+<div class="chart-title">¿Le creen al REM? Inflación real, proyectada e implícita en bonos</div>
+<div class="chart-subtitle">IPC mensual real (INDEC) vs. proyección del REM vs. inflación implícita en bonos CER — enero a diciembre 2026</div>
+
+<div class="legend">
+  <span class="legend-item">
+    <span class="legend-line" style="background:#E24B4A;"></span>
+    IPC real (INDEC)
+  </span>
+  <span class="legend-item">
+    <span class="legend-line" style="background:#185FA5; border-top: 2px dashed #185FA5; height:0;"></span>
+    Proyección REM
+  </span>
+  <span class="legend-item">
+    <span class="legend-line" style="background:#BA7517; border-top: 2px dotted #BA7517; height:0;"></span>
+    Inflación implícita CER vs. Lecap
+  </span>
+</div>
+
+<div class="zona-label">← datos reales &nbsp;&nbsp;&nbsp; proyecciones →</div>
+
+<div class="chart-wrap">
+  <canvas id="g3" role="img" aria-label="Gráfico de líneas comparando la inflación mensual real del INDEC (enero a abril 2026), la proyección del REM para el resto del año, y la inflación implícita en la brecha entre bonos CER y Lecaps. La inflación implícita supera sistemáticamente la proyección del REM, indicando que el mercado descuenta una desinflación más lenta que el consenso de analistas.">
+    Inflación INDEC ene-abr: 2.3, 2.7, 3.4, 2.6. REM proyectado: 2.6, 2.2, 2.1, 1.9, 1.7, 1.7, 1.6, 1.5. Implícita CER-Lecap: mayor que REM en todos los periodos proyectados.
+  </canvas>
+</div>
+
+<div class="insight-strip">
+  <div class="insight-cell">
+    <div class="insight-label">Brecha implícita vs REM · mayo</div>
+    <div class="insight-val" style="color:#BA7517;">+0,4 p.p.</div>
+    <div class="insight-desc">El mercado descuenta más inflación que el consenso de analistas para mayo</div>
+  </div>
+  <div class="insight-cell">
+    <div class="insight-label">IPC acumulado 2026 (4 meses)</div>
+    <div class="insight-val" style="color:#E24B4A;">12,3%</div>
+    <div class="insight-desc">Supera la meta oficial anual de 10,1%. Interanual: 32,4%</div>
+  </div>
+  <div class="insight-cell">
+    <div class="insight-label">REM · inflación anual 2026</div>
+    <div class="insight-val" style="color:#185FA5;">30,5%</div>
+    <div class="insight-desc">Sube 1,4 p.p. vs. el relevamiento anterior. Top 10 estima 30,7%</div>
+  </div>
+  <div class="insight-cell">
+    <div class="insight-label">Consultoras · mayo (parcial)</div>
+    <div class="insight-val">2,0–2,4%</div>
+    <div class="insight-desc">EcoGo 2,2% · LyP 2,0–2,1% · Analytica 2,4% · Equilibria &gt;2%</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Fuentes:</strong> INDEC — IPC nivel general (ene–abr 2026). REM BCRA — relevamiento abril 2026, publicado el 7 de mayo. Inflación implícita CER-Lecap: diferencial de rendimiento entre bonos CER cortos (TX26, TZXM7) y Lecaps de duration equivalente, convertido a tasa mensual. EcoGo, Libertad y Progreso, Analytica, Equilibria — estimaciones preliminares de inflación mayo 2026 (segunda semana). Elaboración propia.
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+const ipcReal    = [2.3, 2.7, 3.4, 2.6, null, null, null, null, null, null, null, null];
+const remProyec  = [null, null, null, 2.6, 2.2, 2.1, 1.9, 1.7, 1.7, 1.6, 1.6, 1.5];
+const implicita  = [2.45, 2.85, 3.55, 2.75, 2.60, 2.45, 2.25, 2.05, 2.00, 1.90, 1.85, 1.75];
+
+const REAL_END = 4;
+
+const zonaPlugin = {
+  id: 'zonaProyec',
+  beforeDraw(chart) {
+    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+    const xStart = x.getPixelForValue(REAL_END - 0.5);
+    const xEnd   = x.getPixelForValue(meses.length - 0.5);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.025)';
+    ctx.fillRect(xStart, top, xEnd - xStart, bottom - top);
+    ctx.restore();
+  }
+};
+
+const lineaPlugin = {
+  id: 'separador',
+  afterDraw(chart) {
+    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+    const px = x.getPixelForValue(REAL_END - 0.5);
+    ctx.save();
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(px, top);
+    ctx.lineTo(px, bottom);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+
+new Chart(document.getElementById('g3'), {
+  type: 'line',
+  plugins: [zonaPlugin, lineaPlugin],
+  data: {
+    labels: meses,
+    datasets: [
+      {
+        label: 'IPC real (INDEC)',
+        data: ipcReal,
+        borderColor: '#E24B4A',
+        backgroundColor: 'rgba(226,75,74,0.12)',
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointBackgroundColor: '#E24B4A',
+        pointStyle: 'circle',
+        tension: 0.3,
+        fill: false,
+        spanGaps: false
+      },
+      {
+        label: 'Proyección REM',
+        data: remProyec,
+        borderColor: '#185FA5',
+        backgroundColor: 'rgba(24,95,165,0.07)',
+        borderWidth: 2,
+        borderDash: [6, 4],
+        pointRadius: 4,
+        pointBackgroundColor: '#185FA5',
+        pointStyle: 'rectRot',
+        tension: 0.35,
+        fill: false,
+        spanGaps: false
+      },
+      {
+        label: 'Inflación implícita CER−Lecap',
+        data: implicita,
+        borderColor: '#BA7517',
+        backgroundColor: 'rgba(186,117,23,0.08)',
+        borderWidth: 1.8,
+        borderDash: [3, 3],
+        pointRadius: 3,
+        pointBackgroundColor: '#BA7517',
+        pointStyle: 'triangle',
+        tension: 0.35,
+        fill: false,
+        spanGaps: true
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#fff',
+        borderColor: '#ddd',
+        borderWidth: 1,
+        titleColor: '#111',
+        bodyColor: '#444',
+        padding: 10,
+        filter: item => item.parsed.y !== null,
+        callbacks: {
+          label: ctx => {
+            const v = ctx.parsed.y;
+            return v !== null ? `${ctx.dataset.label}: ${v.toFixed(1)}%` : '';
+          }
+        }
+      },
+      annotation: {}
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          font: { size: 11 },
+          color: '#666',
+          autoSkip: false,
+          maxRotation: 0
+        }
+      },
+      y: {
+        min: 1.0,
+        max: 4.0,
+        grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false },
+        border: { dash: [3, 3], display: false },
+        ticks: {
+          font: { size: 11 },
+          color: '#888',
+          padding: 6,
+          callback: v => v.toFixed(1) + '%'
+        }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
