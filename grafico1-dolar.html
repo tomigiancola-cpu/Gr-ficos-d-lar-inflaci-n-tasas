@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tipo de Cambio Proyectado 2026 – Top 10 REM</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #21262d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --gold: #d29922;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 36px 40px 28px;
+    max-width: 720px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+  .chart-area {
+    position: relative;
+    height: 260px;
+    margin-bottom: 20px;
+  }
+  svg.chart { width: 100%; height: 100%; overflow: visible; }
+  .axis-label {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 11px;
+    fill: var(--muted);
+  }
+  .value-label {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    fill: var(--accent);
+  }
+  .grid-line { stroke: var(--border); stroke-width: 1; }
+  .data-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .area { fill: url(#areaGrad); }
+  .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    margin-top: 8px;
+  }
+  .source {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+  .highlight-box {
+    background: rgba(88,166,255,0.07);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="tag">Mercado Cambiario</div>
+  <h2>Tipo de Cambio Oficial Proyectado</h2>
+  <p class="subtitle">Promedio mensual en $/USD — Top 10 consultoras REM · BCRA, abril 2026</p>
+
+  <div class="chart-area">
+    <svg class="chart" viewBox="0 0 640 250" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#58a6ff" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#58a6ff" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Grid lines -->
+      <line class="grid-line" x1="60" y1="20" x2="620" y2="20"/>
+      <line class="grid-line" x1="60" y1="75" x2="620" y2="75"/>
+      <line class="grid-line" x1="60" y1="130" x2="620" y2="130"/>
+      <line class="grid-line" x1="60" y1="185" x2="620" y2="185"/>
+      <line class="grid-line" x1="60" y1="230" x2="620" y2="230"/>
+
+      <!-- Y axis labels -->
+      <text class="axis-label" x="50" y="24" text-anchor="end">1.650</text>
+      <text class="axis-label" x="50" y="79" text-anchor="end">1.580</text>
+      <text class="axis-label" x="50" y="134" text-anchor="end">1.510</text>
+      <text class="axis-label" x="50" y="189" text-anchor="end">1.440</text>
+      <text class="axis-label" x="50" y="234" text-anchor="end">1.370</text>
+
+      <!-- 
+        Data: Jun=1423, Jul=1444, Ago=1477, Sep=1512, Oct=1546, Dic=1611
+        Range: 1370–1650 = 280
+        Height: 210 (from y=20 to y=230)
+        scale: 210/280 = 0.75
+        x positions: 6 points across 60–620 = 560px / 5 gaps = 112px
+      -->
+      <!-- Area -->
+      <path class="area" d="
+        M 60,230
+        L 60,176
+        L 172,161
+        L 284,138
+        L 396,113
+        L 508,86
+        L 620,35
+        L 620,230 Z
+      "/>
+      <!-- Line -->
+      <path class="data-line" d="M 60,176 L 172,161 L 284,138 L 396,113 L 508,86 L 620,35"/>
+
+      <!-- Dots -->
+      <circle class="dot" cx="60" cy="176" r="5"/>
+      <circle class="dot" cx="172" cy="161" r="5"/>
+      <circle class="dot" cx="284" cy="138" r="5"/>
+      <circle class="dot" cx="396" cy="113" r="5"/>
+      <circle class="dot" cx="508" cy="86" r="5"/>
+      <circle class="dot" cx="620" cy="35" r="5"/>
+
+      <!-- Value labels -->
+      <text class="value-label" x="60" y="165" text-anchor="middle">$1.423</text>
+      <text class="value-label" x="172" y="150" text-anchor="middle">$1.444</text>
+      <text class="value-label" x="284" y="127" text-anchor="middle">$1.477</text>
+      <text class="value-label" x="396" y="102" text-anchor="middle">$1.512</text>
+      <text class="value-label" x="508" y="75" text-anchor="middle">$1.546</text>
+      <text class="value-label" x="620" y="24" text-anchor="middle">$1.611</text>
+
+      <!-- X axis labels -->
+      <text class="axis-label" x="60" y="248" text-anchor="middle">Jun</text>
+      <text class="axis-label" x="172" y="248" text-anchor="middle">Jul</text>
+      <text class="axis-label" x="284" y="248" text-anchor="middle">Ago</text>
+      <text class="axis-label" x="396" y="248" text-anchor="middle">Sep</text>
+      <text class="axis-label" x="508" y="248" text-anchor="middle">Oct</text>
+      <text class="axis-label" x="620" y="248" text-anchor="middle">Dic</text>
+    </svg>
+  </div>
+
+  <div class="footer-row">
+    <span class="source">Fuente: REM – BCRA, abril 2026</span>
+    <div class="highlight-box">+13,2% jun→dic</div>
+  </div>
+</div>
+</body>
+</html>

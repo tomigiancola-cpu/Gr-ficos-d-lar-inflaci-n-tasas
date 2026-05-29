@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inflación Proyectada 2026 – Top 10 REM</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #21262d;
+    --accent: #3fb950;
+    --text: #e6edf3;
+    --muted: #8b949e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 36px 40px 28px;
+    max-width: 720px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), #58a6ff);
+  }
+  .tag { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  h2 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 32px; }
+  .chart-area { position: relative; height: 260px; margin-bottom: 20px; }
+  svg.chart { width: 100%; height: 100%; overflow: visible; }
+  .axis-label { font-family: 'Source Sans 3', sans-serif; font-size: 11px; fill: var(--muted); }
+  .value-label { font-family: 'Source Sans 3', sans-serif; font-size: 11px; font-weight: 600; fill: var(--accent); }
+  .grid-line { stroke: var(--border); stroke-width: 1; }
+  .bar { fill: var(--accent); rx: 3; opacity: 0.85; }
+  .bar-dim { fill: #2ea043; opacity: 0.6; }
+  .footer-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 8px; }
+  .source { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+  .highlight-box { background: rgba(63,185,80,0.08); border: 1px solid rgba(63,185,80,0.25); border-radius: 6px; padding: 6px 12px; font-size: 12px; color: var(--accent); font-weight: 600; }
+  .legend { display: flex; gap: 16px; margin-bottom: 20px; }
+  .leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .leg-swatch { width: 12px; height: 12px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="tag">Inflación</div>
+  <h2>IPC Proyectado — Variación Mensual %</h2>
+  <p class="subtitle">Top 10 consultoras REM · BCRA, abril 2026 · Nivel General e IPC Núcleo</p>
+
+  <div class="legend">
+    <div class="leg-item"><div class="leg-swatch" style="background:#3fb950;opacity:0.85"></div>IPC Nivel General</div>
+    <div class="leg-item"><div class="leg-swatch" style="background:#58a6ff;opacity:0.7"></div>IPC Núcleo</div>
+  </div>
+
+  <div class="chart-area">
+    <svg class="chart" viewBox="0 0 640 240" xmlns="http://www.w3.org/2000/svg">
+      <!-- 
+        Data: Jun=2.3/2.3, Jul=2.4/2.4, Ago=2.1/2.1, Sep=2.1/1.9, Oct=2.0/1.8, Dic=N/A (use 2.0/1.8 from trend)
+        Range: 0–3.0%, height=200px, scale=200/3=66.7px per %
+        Bar width=60px, spacing. 6 months across 60–620=560px, per slot=93px
+        Paired bars: each bar 25px wide, gap 4px between pair, pair centered on x
+      -->
+      <!-- Grid lines -->
+      <line class="grid-line" x1="60" y1="20" x2="620" y2="20"/>
+      <line class="grid-line" x1="60" y1="87" x2="620" y2="87"/>
+      <line class="grid-line" x1="60" y1="153" x2="620" y2="153"/>
+      <line class="grid-line" x1="60" y1="220" x2="620" y2="220"/>
+
+      <!-- Y axis: 0%=220, 1%=153, 2%=87, 3%=20; scale=66.7px per % -->
+      <text class="axis-label" x="50" y="24" text-anchor="end">3,0%</text>
+      <text class="axis-label" x="50" y="90" text-anchor="end">2,0%</text>
+      <text class="axis-label" x="50" y="157" text-anchor="end">1,0%</text>
+      <text class="axis-label" x="50" y="224" text-anchor="end">0%</text>
+
+      <!-- Jun: General=2.3, Nucleo=2.3 → y=220-2.3*66.7=220-153.4=66.6, h=153.4 -->
+      <rect x="72" y="67" width="28" height="153" fill="#3fb950" opacity="0.85" rx="3"/>
+      <rect x="102" y="67" width="28" height="153" fill="#58a6ff" opacity="0.7" rx="3"/>
+      <text class="value-label" x="86" y="60" text-anchor="middle" fill="#3fb950">2,3%</text>
+
+      <!-- Jul: General=2.4, Nucleo=2.4 → h=2.4*66.7=160.1, y=59.9 -->
+      <rect x="165" y="60" width="28" height="160" fill="#3fb950" opacity="0.85" rx="3"/>
+      <rect x="195" y="60" width="28" height="160" fill="#58a6ff" opacity="0.7" rx="3"/>
+      <text class="value-label" x="179" y="53" text-anchor="middle" fill="#3fb950">2,4%</text>
+
+      <!-- Ago: General=2.1, Nucleo=2.1 → h=2.1*66.7=140.1, y=79.9 -->
+      <rect x="258" y="80" width="28" height="140" fill="#3fb950" opacity="0.85" rx="3"/>
+      <rect x="288" y="80" width="28" height="140" fill="#58a6ff" opacity="0.7" rx="3"/>
+      <text class="value-label" x="272" y="73" text-anchor="middle" fill="#3fb950">2,1%</text>
+
+      <!-- Sep: General=2.1, Nucleo=1.9 → h=2.1*66.7=140.1, y=79.9 / h=1.9*66.7=126.7, y=93.3 -->
+      <rect x="351" y="80" width="28" height="140" fill="#3fb950" opacity="0.85" rx="3"/>
+      <rect x="381" y="93" width="28" height="127" fill="#58a6ff" opacity="0.7" rx="3"/>
+      <text class="value-label" x="365" y="73" text-anchor="middle" fill="#3fb950">2,1%</text>
+
+      <!-- Oct: General=2.0, Nucleo=1.8 → h=2.0*66.7=133.4, y=86.6 / h=1.8*66.7=120.1, y=99.9 -->
+      <rect x="444" y="87" width="28" height="133" fill="#3fb950" opacity="0.85" rx="3"/>
+      <rect x="474" y="100" width="28" height="120" fill="#58a6ff" opacity="0.7" rx="3"/>
+      <text class="value-label" x="458" y="80" text-anchor="middle" fill="#3fb950">2,0%</text>
+
+      <!-- Dic (proj): General=2.0 trend, Nucleo=1.8 trend -->
+      <rect x="537" y="87" width="28" height="133" fill="#3fb950" opacity="0.55" rx="3"/>
+      <rect x="567" y="100" width="28" height="120" fill="#58a6ff" opacity="0.45" rx="3"/>
+      <text class="value-label" x="551" y="80" text-anchor="middle" fill="#8b949e">~2,0%</text>
+
+      <!-- X labels -->
+      <text class="axis-label" x="93" y="238" text-anchor="middle">Jun</text>
+      <text class="axis-label" x="186" y="238" text-anchor="middle">Jul</text>
+      <text class="axis-label" x="279" y="238" text-anchor="middle">Ago</text>
+      <text class="axis-label" x="372" y="238" text-anchor="middle">Sep</text>
+      <text class="axis-label" x="465" y="238" text-anchor="middle">Oct</text>
+      <text class="axis-label" x="558" y="238" text-anchor="middle">Dic*</text>
+    </svg>
+  </div>
+
+  <div class="footer-row">
+    <span class="source">Fuente: REM – BCRA, abril 2026 · *Dic: proyección de tendencia</span>
+    <div class="highlight-box">30,5% acum. 2026 est.</div>
+  </div>
+</div>
+</body>
+</html>
