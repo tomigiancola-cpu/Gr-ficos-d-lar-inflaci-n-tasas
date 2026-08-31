@@ -1,0 +1,534 @@
+<title>Inflación y crédito UVA</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --axis:           #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6; /* inflación */
+    --series-2:       #eb6834; /* crédito UVA */
+    --series-1-wash:  rgba(42,120,214,0.10);
+    --series-2-wash:  rgba(235,104,52,0.10);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --axis:           #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-1-wash:  rgba(57,135,229,0.14);
+      --series-2-wash:  rgba(217,89,38,0.14);
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:           #2c2c2a;
+    --axis:           #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --series-1-wash:  rgba(57,135,229,0.14);
+    --series-2-wash:  rgba(217,89,38,0.14);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+
+  .viz-root {
+    padding: 20px 12px 16px;
+  }
+  .card {
+    max-width: 960px;
+    margin: 0 auto;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px 18px;
+  }
+  .kicker {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--series-2);
+    margin: 0 0 6px;
+  }
+  h1 {
+    font-size: 21px;
+    line-height: 1.25;
+    margin: 0 0 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .subtitle {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    margin: 0 0 18px;
+    max-width: 72ch;
+  }
+  .subtitle strong { color: var(--text-primary); font-weight: 650; }
+
+  .chart-wrap {
+    position: relative;
+    margin-top: 4px;
+  }
+  svg.chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    touch-action: pan-y;
+  }
+  .panel-label {
+    font-size: 15.5px;
+    font-weight: 650;
+    fill: var(--text-primary);
+  }
+  .key-line { stroke-width: 2.5; stroke-linecap: round; }
+  .axis-label { font-size: 12px; fill: var(--text-muted); }
+  .grid-line { stroke: var(--grid); stroke-width: 1; shape-rendering: crispEdges; }
+  .baseline { stroke: var(--axis); stroke-width: 1; shape-rendering: crispEdges; }
+  .series-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+  .series-area { stroke: none; }
+  .end-dot { stroke: var(--surface-1); stroke-width: 2; }
+  .end-label-value { font-size: 14.5px; font-weight: 700; }
+  .end-label-date { font-size: 11.5px; fill: var(--text-muted); }
+  .mark-dot { stroke: var(--surface-1); stroke-width: 2; }
+  .mark-label { font-size: 12px; fill: var(--text-secondary); }
+  .crosshair { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 2 3; pointer-events: none; opacity: 0; }
+  .hover-dot { pointer-events: none; opacity: 0; stroke: var(--surface-1); stroke-width: 2; }
+  .overlay { fill: transparent; cursor: crosshair; }
+
+  .tooltip {
+    position: absolute;
+    top: 0; left: 0;
+    transform: translate(-9999px, -9999px);
+    pointer-events: none;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+    padding: 9px 12px;
+    font-size: 12.5px;
+    min-width: 168px;
+    z-index: 5;
+  }
+  .tooltip-date {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .tooltip-row { display: flex; align-items: center; gap: 7px; margin: 3px 0; }
+  .tooltip-key { width: 12px; height: 2.5px; border-radius: 2px; flex: none; }
+  .tooltip-name { color: var(--text-secondary); flex: 1; }
+  .tooltip-value { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .tooltip-na { color: var(--text-muted); font-style: italic; }
+
+  .foot-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .source {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    max-width: 56ch;
+  }
+  .table-toggle {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    color: var(--text-primary);
+    background: transparent;
+    border: 1px solid var(--axis);
+    border-radius: 7px;
+    padding: 6px 11px;
+    cursor: pointer;
+    flex: none;
+  }
+  .table-toggle:hover { background: var(--grid); }
+
+  .table-wrap {
+    margin-top: 14px;
+    max-height: 340px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: none;
+  }
+  .table-wrap.open { display: block; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface-1);
+    text-align: right;
+    padding: 8px 12px;
+    font-weight: 650;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  thead th:first-child { text-align: left; }
+  tbody td {
+    text-align: right;
+    padding: 5px 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td:first-child { text-align: left; color: var(--text-secondary); }
+  tbody tr:last-child td { border-bottom: none; }
+</style>
+
+<div class="viz-root">
+  <div class="card">
+    <h1>Inflación mensual y saldo de crédito UVA/UVI, 2018–2026</h1>
+
+    <div class="chart-wrap" id="chartWrap">
+      <svg class="chart" id="chart" viewBox="0 0 1000 470" role="img" aria-label="Gráfico de líneas con dos paneles: inflación mensual desde enero de 2018 y saldo total de créditos en UVA desde enero de 2018">
+      </svg>
+      <div class="tooltip" id="tooltip">
+        <div class="tooltip-date" id="ttDate"></div>
+        <div class="tooltip-row">
+          <span class="tooltip-key" style="background:var(--series-1)"></span>
+          <span class="tooltip-name">Inflación mensual</span>
+          <span class="tooltip-value" id="ttInfl"></span>
+        </div>
+        <div class="tooltip-row">
+          <span class="tooltip-key" style="background:var(--series-2)"></span>
+          <span class="tooltip-name">Crédito UVA</span>
+          <span class="tooltip-value" id="ttUva"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot-row">
+      <p class="source">Fuente: BCRA e INDEC.</p>
+      <button class="table-toggle" id="tableToggle" aria-expanded="false">Ver tabla de datos</button>
+    </div>
+
+    <div class="table-wrap" id="tableWrap">
+      <table>
+        <thead>
+          <tr><th>Mes</th><th>Inflación mensual</th><th>Saldo crédito UVA</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var DATA = {"infl": [{"x": 0, "date": "2018-01-01", "v": 1.8}, {"x": 1, "date": "2018-02-01", "v": 2.4}, {"x": 2, "date": "2018-03-01", "v": 2.3}, {"x": 3, "date": "2018-04-01", "v": 2.7}, {"x": 4, "date": "2018-05-01", "v": 2.1}, {"x": 5, "date": "2018-06-01", "v": 3.7}, {"x": 6, "date": "2018-07-01", "v": 3.1}, {"x": 7, "date": "2018-08-01", "v": 3.9}, {"x": 8, "date": "2018-09-01", "v": 6.5}, {"x": 9, "date": "2018-10-01", "v": 5.4}, {"x": 10, "date": "2018-11-01", "v": 3.2}, {"x": 11, "date": "2018-12-01", "v": 2.6}, {"x": 12, "date": "2019-01-01", "v": 2.9}, {"x": 13, "date": "2019-02-01", "v": 3.8}, {"x": 14, "date": "2019-03-01", "v": 4.7}, {"x": 15, "date": "2019-04-01", "v": 3.4}, {"x": 16, "date": "2019-05-01", "v": 3.1}, {"x": 17, "date": "2019-06-01", "v": 2.7}, {"x": 18, "date": "2019-07-01", "v": 2.2}, {"x": 19, "date": "2019-08-01", "v": 4.0}, {"x": 20, "date": "2019-09-01", "v": 5.9}, {"x": 21, "date": "2019-10-01", "v": 3.3}, {"x": 22, "date": "2019-11-01", "v": 4.3}, {"x": 23, "date": "2019-12-01", "v": 3.7}, {"x": 24, "date": "2020-01-01", "v": 2.3}, {"x": 25, "date": "2020-02-01", "v": 2.0}, {"x": 26, "date": "2020-03-01", "v": 3.3}, {"x": 27, "date": "2020-04-01", "v": 1.5}, {"x": 28, "date": "2020-05-01", "v": 1.5}, {"x": 29, "date": "2020-06-01", "v": 2.2}, {"x": 30, "date": "2020-07-01", "v": 1.9}, {"x": 31, "date": "2020-08-01", "v": 2.7}, {"x": 32, "date": "2020-09-01", "v": 2.8}, {"x": 33, "date": "2020-10-01", "v": 3.8}, {"x": 34, "date": "2020-11-01", "v": 3.2}, {"x": 35, "date": "2020-12-01", "v": 4.0}, {"x": 36, "date": "2021-01-01", "v": 4.0}, {"x": 37, "date": "2021-02-01", "v": 3.6}, {"x": 38, "date": "2021-03-01", "v": 4.8}, {"x": 39, "date": "2021-04-01", "v": 4.1}, {"x": 40, "date": "2021-05-01", "v": 3.3}, {"x": 41, "date": "2021-06-01", "v": 3.2}, {"x": 42, "date": "2021-07-01", "v": 3.0}, {"x": 43, "date": "2021-08-01", "v": 2.5}, {"x": 44, "date": "2021-09-01", "v": 3.5}, {"x": 45, "date": "2021-10-01", "v": 3.5}, {"x": 46, "date": "2021-11-01", "v": 2.5}, {"x": 47, "date": "2021-12-01", "v": 3.8}, {"x": 48, "date": "2022-01-01", "v": 3.9}, {"x": 49, "date": "2022-02-01", "v": 4.7}, {"x": 50, "date": "2022-03-01", "v": 6.7}, {"x": 51, "date": "2022-04-01", "v": 6.0}, {"x": 52, "date": "2022-05-01", "v": 5.1}, {"x": 53, "date": "2022-06-01", "v": 5.3}, {"x": 54, "date": "2022-07-01", "v": 7.4}, {"x": 55, "date": "2022-08-01", "v": 7.0}, {"x": 56, "date": "2022-09-01", "v": 6.2}, {"x": 57, "date": "2022-10-01", "v": 6.3}, {"x": 58, "date": "2022-11-01", "v": 4.9}, {"x": 59, "date": "2022-12-01", "v": 5.1}, {"x": 60, "date": "2023-01-01", "v": 6.0}, {"x": 61, "date": "2023-02-01", "v": 6.6}, {"x": 62, "date": "2023-03-01", "v": 7.7}, {"x": 63, "date": "2023-04-01", "v": 8.4}, {"x": 64, "date": "2023-05-01", "v": 7.8}, {"x": 65, "date": "2023-06-01", "v": 6.0}, {"x": 66, "date": "2023-07-01", "v": 6.3}, {"x": 67, "date": "2023-08-01", "v": 12.4}, {"x": 68, "date": "2023-09-01", "v": 12.7}, {"x": 69, "date": "2023-10-01", "v": 8.3}, {"x": 70, "date": "2023-11-01", "v": 12.8}, {"x": 71, "date": "2023-12-01", "v": 25.5}, {"x": 72, "date": "2024-01-01", "v": 20.6}, {"x": 73, "date": "2024-02-01", "v": 13.2}, {"x": 74, "date": "2024-03-01", "v": 11.0}, {"x": 75, "date": "2024-04-01", "v": 8.8}, {"x": 76, "date": "2024-05-01", "v": 4.2}, {"x": 77, "date": "2024-06-01", "v": 4.6}, {"x": 78, "date": "2024-07-01", "v": 4.0}, {"x": 79, "date": "2024-08-01", "v": 4.2}, {"x": 80, "date": "2024-09-01", "v": 3.5}, {"x": 81, "date": "2024-10-01", "v": 2.7}, {"x": 82, "date": "2024-11-01", "v": 2.4}, {"x": 83, "date": "2024-12-01", "v": 2.7}, {"x": 84, "date": "2025-01-01", "v": 2.2}, {"x": 85, "date": "2025-02-01", "v": 2.4}, {"x": 86, "date": "2025-03-01", "v": 3.7}, {"x": 87, "date": "2025-04-01", "v": 2.8}, {"x": 88, "date": "2025-05-01", "v": 1.5}, {"x": 89, "date": "2025-06-01", "v": 1.6}, {"x": 90, "date": "2025-07-01", "v": 1.9}, {"x": 91, "date": "2025-08-01", "v": 1.9}, {"x": 92, "date": "2025-09-01", "v": 2.1}, {"x": 93, "date": "2025-10-01", "v": 2.3}, {"x": 94, "date": "2025-11-01", "v": 2.5}, {"x": 95, "date": "2025-12-01", "v": 2.8}, {"x": 96, "date": "2026-01-01", "v": 2.9}, {"x": 97, "date": "2026-02-01", "v": 2.9}, {"x": 98, "date": "2026-03-01", "v": 3.4}, {"x": 99, "date": "2026-04-01", "v": 2.6}, {"x": 100, "date": "2026-05-01", "v": 2.1}, {"x": 101, "date": "2026-06-01", "v": 1.9}, {"x": 102, "date": "2026-07-01", "v": 2.1}], "uva": [{"x": 0, "date": "2018-01-01", "v": 4729150}, {"x": 1, "date": "2018-02-01", "v": 5285399}, {"x": 2, "date": "2018-03-01", "v": 6062997}, {"x": 3, "date": "2018-04-01", "v": 6759280}, {"x": 4, "date": "2018-05-01", "v": 7304919}, {"x": 5, "date": "2018-06-01", "v": 7615295}, {"x": 6, "date": "2018-07-01", "v": 7869265}, {"x": 7, "date": "2018-08-01", "v": 8158569}, {"x": 8, "date": "2018-09-01", "v": 8318187}, {"x": 9, "date": "2018-10-01", "v": 8477670}, {"x": 10, "date": "2018-11-01", "v": 8850122}, {"x": 11, "date": "2018-12-01", "v": 8958843}, {"x": 12, "date": "2019-01-01", "v": 9053190}, {"x": 13, "date": "2019-02-01", "v": 9146864}, {"x": 14, "date": "2019-03-01", "v": 9224309}, {"x": 15, "date": "2019-04-01", "v": 9237439}, {"x": 16, "date": "2019-05-01", "v": 9261326}, {"x": 17, "date": "2019-06-01", "v": 9317588}, {"x": 18, "date": "2019-07-01", "v": 9525450}, {"x": 19, "date": "2019-08-01", "v": 9498213}, {"x": 20, "date": "2019-09-01", "v": 9483013}, {"x": 21, "date": "2019-10-01", "v": 9450441}, {"x": 22, "date": "2019-11-01", "v": 9040077}, {"x": 23, "date": "2019-12-01", "v": 9302409}, {"x": 24, "date": "2020-01-01", "v": 9197417}, {"x": 25, "date": "2020-02-01", "v": 9083336}, {"x": 26, "date": "2020-03-01", "v": 9001796}, {"x": 27, "date": "2020-04-01", "v": 8878433}, {"x": 28, "date": "2020-05-01", "v": 8549629}, {"x": 29, "date": "2020-06-01", "v": 8403933}, {"x": 30, "date": "2020-07-01", "v": 8230574}, {"x": 31, "date": "2020-08-01", "v": 8137600}, {"x": 32, "date": "2020-09-01", "v": 8037837}, {"x": 33, "date": "2020-10-01", "v": 7924022}, {"x": 34, "date": "2020-11-01", "v": 7817156}, {"x": 35, "date": "2020-12-01", "v": 7698467}, {"x": 36, "date": "2021-01-01", "v": 7611839}, {"x": 37, "date": "2021-02-01", "v": 7538186}, {"x": 38, "date": "2021-03-01", "v": 7464570}, {"x": 39, "date": "2021-04-01", "v": 7415083}, {"x": 40, "date": "2021-05-01", "v": 7320401}, {"x": 41, "date": "2021-06-01", "v": 7221833}, {"x": 42, "date": "2021-07-01", "v": 7123762}, {"x": 43, "date": "2021-08-01", "v": 7029759}, {"x": 44, "date": "2021-09-01", "v": 6942581}, {"x": 45, "date": "2021-10-01", "v": 6862766}, {"x": 46, "date": "2021-11-01", "v": 6759831}, {"x": 47, "date": "2021-12-01", "v": 6684294}, {"x": 48, "date": "2022-01-01", "v": 6610054}, {"x": 49, "date": "2022-02-01", "v": 6532303}, {"x": 50, "date": "2022-03-01", "v": 6443410}, {"x": 51, "date": "2022-04-01", "v": 6364601}, {"x": 52, "date": "2022-05-01", "v": 6128569}, {"x": 53, "date": "2022-06-01", "v": 6089686}, {"x": 54, "date": "2022-07-01", "v": 5992198}, {"x": 55, "date": "2022-08-01", "v": 5933033}, {"x": 56, "date": "2022-09-01", "v": 5885460}, {"x": 57, "date": "2022-10-01", "v": 5855255}, {"x": 58, "date": "2022-11-01", "v": 5826385}, {"x": 59, "date": "2022-12-01", "v": 5805930}, {"x": 60, "date": "2023-01-01", "v": 5792557}, {"x": 61, "date": "2023-02-01", "v": 5775056}, {"x": 62, "date": "2023-03-01", "v": 5766548}, {"x": 63, "date": "2023-04-01", "v": 5719282}, {"x": 64, "date": "2023-05-01", "v": 5728990}, {"x": 65, "date": "2023-06-01", "v": 5727376}, {"x": 66, "date": "2023-07-01", "v": 5733006}, {"x": 67, "date": "2023-08-01", "v": 5721757}, {"x": 68, "date": "2023-09-01", "v": 5733188}, {"x": 69, "date": "2023-10-01", "v": 5762753}, {"x": 70, "date": "2023-11-01", "v": 5773771}, {"x": 71, "date": "2023-12-01", "v": 5669055}, {"x": 72, "date": "2024-01-01", "v": 5562844}, {"x": 73, "date": "2024-02-01", "v": 5554815}, {"x": 74, "date": "2024-03-01", "v": 5492701}, {"x": 75, "date": "2024-04-01", "v": 5552265}, {"x": 76, "date": "2024-05-01", "v": 5498821}, {"x": 77, "date": "2024-06-01", "v": 5460698}, {"x": 78, "date": "2024-07-01", "v": 5462762}, {"x": 79, "date": "2024-08-01", "v": 5522495}, {"x": 80, "date": "2024-09-01", "v": 5639935}, {"x": 81, "date": "2024-10-01", "v": 5850177}, {"x": 82, "date": "2024-11-01", "v": 6094684}, {"x": 83, "date": "2024-12-01", "v": 6398452}, {"x": 84, "date": "2025-01-01", "v": 6698919}, {"x": 85, "date": "2025-02-01", "v": 6997543}, {"x": 86, "date": "2025-03-01", "v": 7278231}, {"x": 87, "date": "2025-04-01", "v": 7597602}, {"x": 88, "date": "2025-05-01", "v": 7915795}, {"x": 89, "date": "2025-06-01", "v": 8215007}, {"x": 90, "date": "2025-07-01", "v": 8562705}, {"x": 91, "date": "2025-08-01", "v": 8883463}, {"x": 92, "date": "2025-09-01", "v": 9210289}, {"x": 93, "date": "2025-10-01", "v": 9532629}, {"x": 94, "date": "2025-11-01", "v": 9727601}, {"x": 95, "date": "2025-12-01", "v": 9972466}, {"x": 96, "date": "2026-01-01", "v": 10125877}, {"x": 97, "date": "2026-02-01", "v": 10221417}, {"x": 98, "date": "2026-03-01", "v": 10327073}, {"x": 99, "date": "2026-04-01", "v": 10380592}, {"x": 100, "date": "2026-05-01", "v": 10430082}, {"x": 101, "date": "2026-06-01", "v": 10512790}]};
+
+  var MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  var MONTHS_FULL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+  function fmtShort(iso) {
+    var p = iso.split('-'); var y = p[0].slice(2); var m = parseInt(p[1], 10) - 1;
+    return MONTHS[m] + '-' + y;
+  }
+  function fmtLong(iso) {
+    var p = iso.split('-'); var m = parseInt(p[1], 10) - 1;
+    var name = MONTHS_FULL[m];
+    return name.charAt(0).toUpperCase() + name.slice(1) + ' de ' + p[0];
+  }
+  function fmtPct(v) { return v.toFixed(1).replace('.', ',') + '%'; }
+  function fmtUva(v) {
+    return Math.round(v / 1000).toLocaleString('es-AR') + ' M UVA';
+  }
+  function fmtUvaShort(v) {
+    return Math.round(v / 1000).toLocaleString('es-AR');
+  }
+
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // ---- layout ----
+  var W = 1000;
+  var ML = 20, MR = 90;                // left/right margins
+  var PW = W - ML - MR;                // plot width
+  var tickX = ML + PW + 26;            // right edge for axis tick labels (text-anchor end)
+  var endLabelX = ML + PW + 32;        // left edge for end-of-line labels (text-anchor start)
+  var maxX = DATA.infl[DATA.infl.length - 1].x; // 102
+
+  var panelATop = 28, panelAH = 260;
+  var panelBTop = panelATop + panelAH + 56, panelBH = 260;
+  var axisY = panelBTop + panelBH + 24;
+  var totalH = axisY + 16;
+
+  function xScale(x) { return ML + (x / maxX) * PW; }
+
+  function niceMax(v, step) { return Math.ceil(v / step) * step; }
+
+  // inflation panel: 0 to niceMax(max value, 5), ticks every 5 (or 10 if huge)
+  var inflMaxV = Math.max.apply(null, DATA.infl.map(function (d) { return d.v; }));
+  var inflTop = niceMax(inflMaxV, 5);
+  var inflTicks = [0, inflTop * 0.25, inflTop * 0.5, inflTop * 0.75, inflTop].map(function(v){ return Math.round(v); });
+  // dedupe
+  inflTicks = inflTicks.filter(function(v,i){ return inflTicks.indexOf(v) === i; });
+
+  function yA(v) { return panelATop + panelAH - (v / inflTop) * panelAH; }
+
+  var uvaVals = DATA.uva.map(function (d) { return d.v; });
+  var uvaMin = Math.min.apply(null, uvaVals), uvaMax = Math.max.apply(null, uvaVals);
+  var uvaLo = Math.floor(uvaMin / 1000 / 1000) * 1000; // millions, rounded down to nearest 1000M
+  var uvaHi = Math.ceil(uvaMax / 1000 / 1000) * 1000;
+  if (uvaHi - uvaLo < 3000) uvaHi = uvaLo + 3000;
+  var uvaTicks = [];
+  for (var t = uvaLo; t <= uvaHi + 1; t += (uvaHi - uvaLo) / 4) uvaTicks.push(Math.round(t / 250) * 250);
+
+  function yB(v) {
+    var mv = v / 1000; // millones de UVA
+    return panelBTop + panelBH - ((mv - uvaLo) / (uvaHi - uvaLo)) * panelBH;
+  }
+
+  var svg = document.getElementById('chart');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + totalH);
+
+  // ---------- panel A: inflación ----------
+  svg.appendChild(el('text', { x: ML, y: panelATop - 10, class: 'panel-label' })).textContent = '';
+  var labelA = el('text', { x: ML, y: panelATop - 10, class: 'panel-label' });
+  labelA.textContent = 'Inflación mensual (variación % del IPC)';
+  svg.appendChild(labelA);
+
+  inflTicks.forEach(function (t) {
+    var y = yA(t);
+    svg.appendChild(el('line', { x1: ML, x2: ML + PW, y1: y, y2: y, class: t === 0 ? 'baseline' : 'grid-line' }));
+    var tx = el('text', { x: tickX, y: y + 3, class: 'axis-label', 'text-anchor': 'end' });
+    tx.textContent = t + '%';
+    svg.appendChild(tx);
+  });
+
+  var areaA = 'M ' + xScale(0) + ' ' + panelATop + panelAH;
+  var pathA = DATA.infl.map(function (d, i) {
+    return (i === 0 ? 'M ' : 'L ') + xScale(d.x) + ' ' + yA(d.v);
+  }).join(' ');
+  var areaAPath = pathA + ' L ' + xScale(maxX) + ' ' + (panelATop + panelAH) + ' L ' + xScale(0) + ' ' + (panelATop + panelAH) + ' Z';
+  svg.appendChild(el('path', { d: areaAPath, class: 'series-area', fill: 'var(--series-1-wash)' }));
+  svg.appendChild(el('path', { d: pathA, class: 'series-line', stroke: 'var(--series-1)' }));
+
+  // peak marker: Dec 2023
+  var peakInfl = DATA.infl.reduce(function (a, b) { return b.v > a.v ? b : a; });
+  (function () {
+    var cx = xScale(peakInfl.x), cy = yA(peakInfl.v);
+    svg.appendChild(el('circle', { cx: cx, cy: cy, r: 4, fill: 'var(--series-1)', class: 'mark-dot' }));
+    var t1 = el('text', { x: cx, y: cy - 21, class: 'mark-label', 'text-anchor': 'middle', 'font-weight': '700' });
+    t1.textContent = fmtPct(peakInfl.v);
+    svg.appendChild(t1);
+    var t2 = el('text', { x: cx, y: cy - 9, class: 'mark-label', 'text-anchor': 'middle' });
+    t2.textContent = fmtShort(peakInfl.date);
+    svg.appendChild(t2);
+  })();
+
+  // end label A
+  (function () {
+    var last = DATA.infl[DATA.infl.length - 1];
+    var cx = xScale(last.x), cy = yA(last.v);
+    svg.appendChild(el('circle', { cx: cx, cy: cy, r: 4.5, fill: 'var(--series-1)', class: 'end-dot' }));
+    var t1 = el('text', { x: endLabelX, y: cy - 3, class: 'end-label-value', fill: 'var(--series-1)' });
+    t1.textContent = fmtPct(last.v);
+    svg.appendChild(t1);
+    var t2 = el('text', { x: endLabelX, y: cy + 11, class: 'end-label-date' });
+    t2.textContent = fmtShort(last.date);
+    svg.appendChild(t2);
+  })();
+
+  // ---------- panel B: crédito UVA ----------
+  var labelB = el('text', { x: ML, y: panelBTop - 10, class: 'panel-label' });
+  labelB.textContent = 'Saldo total de préstamos en UVA / UVI (millones de UVA)';
+  svg.appendChild(labelB);
+
+  uvaTicks.forEach(function (t) {
+    var y = panelBTop + panelBH - ((t - uvaLo) / (uvaHi - uvaLo)) * panelBH;
+    svg.appendChild(el('line', { x1: ML, x2: ML + PW, y1: y, y2: y, class: t === uvaTicks[0] ? 'baseline' : 'grid-line' }));
+    var tx = el('text', { x: tickX, y: y + 3, class: 'axis-label', 'text-anchor': 'end' });
+    tx.textContent = t.toLocaleString('es-AR');
+    svg.appendChild(tx);
+  });
+
+  var pathB = DATA.uva.map(function (d, i) {
+    return (i === 0 ? 'M ' : 'L ') + xScale(d.x) + ' ' + yB(d.v);
+  }).join(' ');
+  var lastUvaX = DATA.uva[DATA.uva.length - 1].x;
+  var areaBPath = pathB + ' L ' + xScale(lastUvaX) + ' ' + (panelBTop + panelBH) + ' L ' + xScale(0) + ' ' + (panelBTop + panelBH) + ' Z';
+  svg.appendChild(el('path', { d: areaBPath, class: 'series-area', fill: 'var(--series-2-wash)' }));
+  svg.appendChild(el('path', { d: pathB, class: 'series-line', stroke: 'var(--series-2)' }));
+
+  // peak (jul-2019) and trough (jun-2024) markers
+  var peakUva = DATA.uva.slice(0, 24).reduce(function (a, b) { return b.v > a.v ? b : a; });
+  var peakIdx = DATA.uva.indexOf(peakUva);
+  var troughUva = DATA.uva.slice(peakIdx).reduce(function (a, b) { return b.v < a.v ? b : a; });
+  [ { d: peakUva, dy: -12 }, { d: troughUva, dy: 20 } ].forEach(function (m) {
+    var cx = xScale(m.d.x), cy = yB(m.d.v);
+    svg.appendChild(el('circle', { cx: cx, cy: cy, r: 4, fill: 'var(--series-2)', class: 'mark-dot' }));
+    var t1 = el('text', { x: cx, y: cy + m.dy - 3, class: 'mark-label', 'text-anchor': 'middle', 'font-weight': '700' });
+    t1.textContent = fmtUva(m.d.v);
+    svg.appendChild(t1);
+    var t2 = el('text', { x: cx, y: cy + m.dy + 9, class: 'mark-label', 'text-anchor': 'middle' });
+    t2.textContent = fmtShort(m.d.date);
+    svg.appendChild(t2);
+  });
+
+  // end label B
+  (function () {
+    var last = DATA.uva[DATA.uva.length - 1];
+    var cx = xScale(last.x), cy = yB(last.v);
+    svg.appendChild(el('circle', { cx: cx, cy: cy, r: 4.5, fill: 'var(--series-2)', class: 'end-dot' }));
+    var t1 = el('text', { x: endLabelX, y: cy - 3, class: 'end-label-value', fill: 'var(--series-2)' });
+    t1.textContent = fmtUvaShort(last.v);
+    svg.appendChild(t1);
+    var t2 = el('text', { x: endLabelX, y: cy + 11, class: 'end-label-date' });
+    t2.textContent = fmtShort(last.date);
+    svg.appendChild(t2);
+  })();
+
+  // ---------- shared x axis (years) ----------
+  for (var yr = 2018; yr <= 2026; yr++) {
+    var mi = (yr - 2018) * 12;
+    if (mi > maxX) continue;
+    var xx = xScale(mi);
+    svg.appendChild(el('line', { x1: xx, x2: xx, y1: panelATop, y2: panelBTop + panelBH, class: 'grid-line', opacity: 0.6 }));
+    var lab = el('text', { x: xx, y: axisY, class: 'axis-label', 'text-anchor': 'middle' });
+    lab.textContent = yr;
+    svg.appendChild(lab);
+  }
+
+  // ---------- crosshair + hover ----------
+  var chLine = el('line', { class: 'crosshair', x1: 0, x2: 0, y1: panelATop, y2: panelBTop + panelBH });
+  svg.appendChild(chLine);
+  var hoverA = el('circle', { class: 'hover-dot', r: 5, fill: 'var(--series-1)' });
+  var hoverB = el('circle', { class: 'hover-dot', r: 5, fill: 'var(--series-2)' });
+  svg.appendChild(hoverA);
+  svg.appendChild(hoverB);
+
+  var overlay = el('rect', {
+    class: 'overlay', x: ML, y: panelATop, width: PW, height: (panelBTop + panelBH - panelATop),
+    tabindex: '0'
+  });
+  svg.appendChild(overlay);
+
+  var wrap = document.getElementById('chartWrap');
+  var tooltip = document.getElementById('tooltip');
+  var ttDate = document.getElementById('ttDate');
+  var ttInfl = document.getElementById('ttInfl');
+  var ttUva = document.getElementById('ttUva');
+
+  var byX_infl = {}; DATA.infl.forEach(function (d) { byX_infl[d.x] = d; });
+  var byX_uva = {}; DATA.uva.forEach(function (d) { byX_uva[d.x] = d; });
+
+  function showAt(idx) {
+    idx = Math.max(0, Math.min(maxX, Math.round(idx)));
+    var dInfl = byX_infl[idx];
+    var dUva = byX_uva[idx];
+    if (!dInfl) return;
+
+    var cx = xScale(idx);
+    chLine.setAttribute('x1', cx); chLine.setAttribute('x2', cx); chLine.style.opacity = 1;
+
+    hoverA.setAttribute('cx', cx); hoverA.setAttribute('cy', yA(dInfl.v)); hoverA.style.opacity = 1;
+    if (dUva) { hoverB.setAttribute('cx', cx); hoverB.setAttribute('cy', yB(dUva.v)); hoverB.style.opacity = 1; }
+    else { hoverB.style.opacity = 0; }
+
+    ttDate.textContent = fmtLong(dInfl.date);
+    ttInfl.textContent = fmtPct(dInfl.v);
+    if (dUva) { ttUva.textContent = fmtUva(dUva.v); ttUva.classList.remove('tooltip-na'); }
+    else { ttUva.textContent = 'sin dato'; ttUva.classList.add('tooltip-na'); }
+
+    // position tooltip (in container pixel space)
+    var svgRect = svg.getBoundingClientRect();
+    var wrapRect = wrap.getBoundingClientRect();
+    var scale = svgRect.width / W;
+    var px = (cx * scale) + (svgRect.left - wrapRect.left);
+    var py = (panelATop * scale) + (svgRect.top - wrapRect.top);
+    var ttW = 190;
+    var left = px + 14;
+    if (left + ttW > wrapRect.width) left = px - ttW - 14;
+    tooltip.style.transform = 'translate(' + Math.max(0, left) + 'px,' + Math.max(0, py) + 'px)';
+  }
+
+  function hide() {
+    chLine.style.opacity = 0; hoverA.style.opacity = 0; hoverB.style.opacity = 0;
+    tooltip.style.transform = 'translate(-9999px,-9999px)';
+  }
+
+  function idxFromClientX(clientX) {
+    var r = svg.getBoundingClientRect();
+    var scale = W / r.width;
+    var svgX = (clientX - r.left) * scale;
+    return ((svgX - ML) / PW) * maxX;
+  }
+
+  overlay.addEventListener('pointermove', function (e) { showAt(idxFromClientX(e.clientX)); });
+  overlay.addEventListener('pointerleave', hide);
+  overlay.addEventListener('pointerdown', function (e) { showAt(idxFromClientX(e.clientX)); });
+  overlay.addEventListener('touchmove', function (e) {
+    if (e.touches && e.touches[0]) { showAt(idxFromClientX(e.touches[0].clientX)); e.preventDefault(); }
+  }, { passive: false });
+
+  var focusIdx = maxX;
+  overlay.addEventListener('focus', function () { showAt(focusIdx); });
+  overlay.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft') { focusIdx = Math.max(0, focusIdx - 1); showAt(focusIdx); e.preventDefault(); }
+    else if (e.key === 'ArrowRight') { focusIdx = Math.min(maxX, focusIdx + 1); showAt(focusIdx); e.preventDefault(); }
+  });
+  overlay.addEventListener('blur', hide);
+
+  // ---------- data table ----------
+  var tbody = document.getElementById('tableBody');
+  for (var i = maxX; i >= 0; i--) {
+    var di = byX_infl[i], du = byX_uva[i];
+    if (!di) continue;
+    var tr = document.createElement('tr');
+    var c0 = document.createElement('td'); c0.textContent = fmtLong(di.date); tr.appendChild(c0);
+    var c1 = document.createElement('td'); c1.textContent = fmtPct(di.v); tr.appendChild(c1);
+    var c2 = document.createElement('td'); c2.textContent = du ? fmtUva(du.v) : '—'; tr.appendChild(c2);
+    tbody.appendChild(tr);
+  }
+
+  var tableToggle = document.getElementById('tableToggle');
+  var tableWrap = document.getElementById('tableWrap');
+  tableToggle.addEventListener('click', function () {
+    var open = tableWrap.classList.toggle('open');
+    tableToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    tableToggle.textContent = open ? 'Ocultar tabla de datos' : 'Ver tabla de datos';
+  });
+})();
+</script>
