@@ -1,0 +1,626 @@
+<title>Mapa de Mercado ARG</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
+
+  :root{
+    --bg:            #0a0f1a;
+    --panel:         #10182a;
+    --panel-2:       #141f36;
+    --line:          rgba(255,255,255,0.08);
+    --text-primary:  #f2f4f8;
+    --text-secondary:#98a2bb;
+    --text-muted:    #5c6785;
+    --accent:        #2dd4bf;
+    --accent-dim:    rgba(45,212,191,0.15);
+    --red-deep:      #a3231f;
+    --red-mid:       #d1453b;
+    --red-light:     #e8746a;
+    --gray-mid:      #333c52;
+    --green-light:   #4fb06a;
+    --green-mid:     #1f9350;
+    --green-deep:    #12703c;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text-primary);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    height:100vh;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    flex:0 0 auto;
+    padding:16px 22px 12px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:14px;
+    background:linear-gradient(180deg, var(--panel-2), var(--bg));
+  }
+  .title-block h1{
+    margin:0 0 3px;
+    font-size:19px;
+    font-weight:700;
+    letter-spacing:0.2px;
+  }
+  .title-block .sub{
+    font-size:12.5px;
+    color:var(--text-secondary);
+  }
+  .title-block .sub b{ color:var(--text-primary); font-weight:600; }
+
+  .controls{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .seg{
+    display:flex;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:3px;
+    gap:2px;
+  }
+  .seg button{
+    appearance:none;
+    border:none;
+    background:transparent;
+    color:var(--text-secondary);
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:600;
+    padding:7px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+    white-space:nowrap;
+  }
+  .seg button:hover{ color:var(--text-primary); }
+  .seg button.active{
+    background:var(--accent);
+    color:#04211d;
+  }
+  .seg button:disabled{
+    opacity:0.35;
+    cursor:not-allowed;
+  }
+  .seg button:disabled:hover{ color:var(--text-secondary); }
+
+  .ghost-btn{
+    appearance:none;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--text-secondary);
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .ghost-btn:hover{ color:var(--text-primary); border-color:rgba(255,255,255,0.2); }
+  .ghost-btn.active{ color:var(--accent); border-color:var(--accent); background:var(--accent-dim); }
+
+  .legend{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-width:210px;
+  }
+  .legend .bar{
+    height:8px;
+    border-radius:4px;
+    background:linear-gradient(90deg, var(--red-deep), var(--red-light) 30%, var(--gray-mid) 50%, var(--green-light) 70%, var(--green-deep));
+  }
+  .legend .ticks{
+    display:flex;
+    justify-content:space-between;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;
+    color:var(--text-muted);
+  }
+  .legend .caption{
+    font-size:10.5px;
+    color:var(--text-muted);
+    text-align:center;
+  }
+
+  /* ---------- Main ---------- */
+  main{
+    flex:1 1 auto;
+    position:relative;
+    min-height:0;
+    padding:10px 14px 6px;
+  }
+  #chart-wrap{
+    position:absolute;
+    inset:10px 14px 6px;
+  }
+  svg{ width:100%; height:100%; display:block; }
+
+  .group-bg{ fill:var(--panel); stroke:var(--bg); stroke-width:2; }
+  .group-label{
+    fill:var(--text-secondary);
+    font-family:"IBM Plex Sans",sans-serif;
+    font-weight:600;
+    font-size:11.5px;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+    pointer-events:none;
+  }
+  .tile{
+    stroke:var(--bg);
+    stroke-width:1.4;
+    cursor:pointer;
+    transition:opacity .12s ease, stroke-width .12s ease;
+  }
+  .tile:hover{ stroke:#fff; stroke-width:2; }
+  .tile.dim{ opacity:0.35; }
+  .tile-ticker{
+    font-family:"IBM Plex Mono",monospace;
+    font-weight:700;
+    fill:#ffffff;
+    pointer-events:none;
+    text-shadow:0 1px 2px rgba(0,0,0,0.35);
+  }
+  .tile-pct{
+    font-family:"IBM Plex Mono",monospace;
+    font-weight:600;
+    fill:rgba(255,255,255,0.92);
+    pointer-events:none;
+    text-shadow:0 1px 2px rgba(0,0,0,0.35);
+  }
+
+  /* ---------- Tooltip ---------- */
+  #tooltip{
+    position:fixed;
+    pointer-events:none;
+    z-index:50;
+    background:#0d1424;
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:10px;
+    padding:11px 13px;
+    font-size:12.5px;
+    line-height:1.55;
+    box-shadow:0 12px 28px rgba(0,0,0,0.5);
+    min-width:200px;
+    display:none;
+  }
+  #tooltip .tt-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:5px;
+    padding-bottom:5px;
+    border-bottom:1px solid var(--line);
+  }
+  #tooltip .tt-ticker{ font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:14px; }
+  #tooltip .tt-var{ font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:14px; }
+  #tooltip .tt-name{ color:var(--text-secondary); font-size:11.5px; margin-bottom:6px; }
+  #tooltip .tt-row{ display:flex; justify-content:space-between; gap:18px; color:var(--text-secondary); }
+  #tooltip .tt-row b{ color:var(--text-primary); font-family:"IBM Plex Mono",monospace; font-weight:600; }
+
+  /* ---------- Table view ---------- */
+  #table-wrap{
+    position:absolute;
+    inset:10px 14px 6px;
+    overflow:auto;
+    display:none;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  thead th{
+    position:sticky; top:0;
+    background:var(--panel-2);
+    text-align:left;
+    padding:9px 12px;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--text-secondary);
+    border-bottom:1px solid var(--line);
+  }
+  thead th.num, tbody td.num{ text-align:right; font-family:"IBM Plex Mono",monospace; }
+  tbody td{
+    padding:8px 12px;
+    border-bottom:1px solid var(--line);
+    color:var(--text-primary);
+  }
+  tbody tr:hover{ background:rgba(255,255,255,0.03); }
+  td.ticker{ font-family:"IBM Plex Mono",monospace; font-weight:700; }
+  td.pct{ font-family:"IBM Plex Mono",monospace; font-weight:600; }
+  .pct-pos{ color:var(--green-light); }
+  .pct-neg{ color:var(--red-light); }
+
+  footer{
+    flex:0 0 auto;
+    padding:7px 22px 10px;
+    font-size:10.5px;
+    color:var(--text-muted);
+    border-top:1px solid var(--line);
+  }
+
+  @media (max-width:760px){
+    header{ flex-direction:column; align-items:flex-start; }
+    .legend{ min-width:160px; }
+  }
+</style>
+
+<header>
+  <div class="title-block">
+    <h1>Mapa de mercado — Argentina</h1>
+    <div class="sub">Panel Líder (S&amp;P Merval) y renta fija · 31-jul-26 → 28-ago-26</div>
+  </div>
+  <div class="controls">
+    <div class="seg" id="asset-toggle">
+      <button data-asset="acciones" class="active">Acciones</button>
+      <button data-asset="bonos">Bonos</button>
+    </div>
+    <div class="seg" id="period-toggle">
+      <button data-period="jul">Julio</button>
+      <button data-period="ago" class="active">Agosto</button>
+    </div>
+    <button class="ghost-btn" id="table-toggle">Ver tabla</button>
+    <div class="legend">
+      <div class="bar"></div>
+      <div class="ticks"><span id="tick-min">-22%</span><span>0%</span><span id="tick-max">+22%</span></div>
+      <div class="caption" id="legend-caption">Variación mensual del precio</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="chart-wrap"><svg id="chart"></svg></div>
+  <div id="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Ticker</th><th>Nombre</th><th>Sector / Segmento</th>
+        <th class="num" id="th-size">Cap. bursátil (ARS M)</th>
+        <th class="num">Variación</th>
+      </tr></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</main>
+
+<div id="tooltip"></div>
+
+<footer>
+  Fuente: BYMA/IAMC, 31-jul-26 y 28-ago-26. Tamaño = capitalización bursátil (acciones) o monto emitido aprox. en USD M (bonos, pesos convertidos a ~$1.535 solo a fines de escala). Color = variación mensual. Pasá el mouse para el detalle.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function(){
+
+  // ---------------- DATA ----------------
+
+  const stockData = [
+    {name:"Energía", items:[
+      {t:"YPFD", name:"YPF", size:31740342, jul:16.56, ago:-2.65},
+      {t:"TGSU2", name:"Transp. de Gas del Sur", size:6782377, jul:8.65, ago:-10.35},
+      {t:"TGNO4", name:"Transp. de Gas del Norte", size:1445540, jul:-0.19, ago:-13.55},
+      {t:"COME", name:"Soc. Comercial del Plata", size:286650, jul:5.03, ago:-7.00},
+    ]},
+    {name:"Servicios Públicos", items:[
+      {t:"PAMP", name:"Pampa Energía", size:7056218, jul:8.50, ago:-6.84},
+      {t:"CEPU", name:"Central Puerto", size:3240982, jul:3.86, ago:-10.64},
+      {t:"TRAN", name:"Transener", size:1667527, jul:-5.72, ago:6.99},
+      {t:"EDN", name:"Edenor", size:1691445, jul:8.60, ago:-12.02},
+      {t:"METR", name:"Metrogas", size:1331861, jul:22.00, ago:11.69},
+      {t:"ECOG", name:"Inversora Gas del Centro", size:723128, jul:-2.67, ago:-3.75},
+    ]},
+    {name:"Servicios Financieros", items:[
+      {t:"GGAL", name:"Grupo Fin. Galicia", size:10938588, jul:1.38, ago:-13.59},
+      {t:"BMA", name:"Banco Macro", size:7801718, jul:0.95, ago:-15.27},
+      {t:"BBAR", name:"BBVA Argentina", size:4782202, jul:-1.65, ago:-21.38},
+      {t:"BYMA", name:"Bolsas y Mercados Arg.", size:1997750, jul:-4.68, ago:-11.34},
+      {t:"SUPV", name:"Grupo Supervielle", size:1191894, jul:-0.50, ago:-10.10},
+      {t:"VALO", name:"Banco de Valores", size:658223, jul:-4.26, ago:-7.78},
+    ]},
+    {name:"Materiales", items:[
+      {t:"TXAR", name:"Ternium Argentina", size:3105502, jul:-0.45, ago:4.25},
+      {t:"LOMA", name:"Loma Negra", size:1832137, jul:0.35, ago:-13.26},
+      {t:"ALUA", name:"Aluar", size:2339400, jul:-0.36, ago:-14.53},
+    ]},
+    {name:"Consumo Básico", items:[
+      {t:"CRES", name:"Cresud", size:1254057, jul:0.57, ago:0.11},
+    ]},
+  ];
+
+  const bondData = [
+    {name:"Globales — Ley Local", items:[
+      {t:"AO27", name:"Bonar 2027 (USD)", size:1445, varp:1.03, ytmJul:3.94, ytmAgo:3.93, bp:-1},
+      {t:"AL29", name:"Bonar 2029 (USD)", size:1395, varp:-0.59, ytmJul:6.47, ytmAgo:8.04, bp:157},
+      {t:"AL30", name:"Bonar 2030 (USD)", size:13103, varp:-0.93, ytmJul:7.40, ytmAgo:8.85, bp:145},
+      {t:"AO28", name:"Bonar 2028 (USD)", size:834, varp:-1.19, ytmJul:7.81, ytmAgo:9.11, bp:130},
+      {t:"AO29", name:"Bonar 2029-II (USD)", size:649, varp:-3.42, ytmJul:8.30, ytmAgo:10.00, bp:170},
+      {t:"AN29", name:"Tesoro Nac. 2029 (USD)", size:1000, varp:-3.63, ytmJul:8.06, ytmAgo:10.10, bp:204},
+      {t:"AE38", name:"Bonar 2038 (USD)", size:10063, varp:-3.58, ytmJul:9.28, ytmAgo:10.57, bp:129},
+      {t:"AL35", name:"Bonar 2035 (USD)", size:15854, varp:-2.98, ytmJul:9.26, ytmAgo:10.24, bp:98},
+      {t:"AL41", name:"Bonar 2041 (USD)", size:1542, varp:-4.90, ytmJul:9.16, ytmAgo:10.42, bp:126},
+    ]},
+    {name:"Globales — Ley NY", items:[
+      {t:"GD29", name:"Global 2029 (USD)", size:2635, varp:0.81, ytmJul:4.97, ytmAgo:5.48, bp:51},
+      {t:"GD30", name:"Global 2030 (USD)", size:13587, varp:0.40, ytmJul:5.89, ytmAgo:6.54, bp:65},
+      {t:"GD38", name:"Global 2038 (USD)", size:11405, varp:-1.88, ytmJul:8.15, ytmAgo:8.98, bp:83},
+      {t:"GD35", name:"Global 2035 (USD)", size:20502, varp:-2.15, ytmJul:8.50, ytmAgo:9.29, bp:79},
+      {t:"GD41", name:"Global 2041 (USD)", size:10482, varp:-2.48, ytmJul:8.60, ytmAgo:9.37, bp:77},
+      {t:"GD46", name:"Global 2046 (USD)", size:2092, varp:-2.15, ytmJul:8.68, ytmAgo:9.34, bp:66},
+    ]},
+    {name:"BOPREALES (BCRA)", items:[
+      {t:"BPOA7", name:"Bopreal Serie I-A", size:830, varp:1.52, ytmJul:3.14, ytmAgo:3.05, bp:-9},
+      {t:"BPOB7", name:"Bopreal Serie I-B", size:996, varp:2.44, ytmJul:3.70, ytmAgo:2.62, bp:-108},
+      {t:"BPOC7", name:"Bopreal Serie I-C", size:1494, varp:2.08, ytmJul:3.39, ytmAgo:2.69, bp:-70},
+      {t:"BPOD7", name:"Bopreal Serie I-D", size:6922, varp:1.97, ytmJul:3.14, ytmAgo:2.55, bp:-59},
+      {t:"BPOA8", name:"Bopreal Serie IV-A", size:282, varp:0.28, ytmJul:7.00, ytmAgo:7.73, bp:73},
+      {t:"BPOB8", name:"Bopreal Serie IV-B", size:563, varp:-0.60, ytmJul:6.58, ytmAgo:7.75, bp:117},
+    ]},
+    {name:"LECAP / BONCAP (pesos)", items:[
+      {t:"S30S6", name:"Lecap 30-sep-26", size:3113, varp:1.86, temJul:2.05, temAgo:2.03},
+      {t:"S30O6", name:"Lecap 30-oct-26", size:5192, varp:1.72, temJul:1.98, temAgo:2.03},
+      {t:"S13N6", name:"Lecap 13-nov-26", size:2722, varp:1.76, temJul:2.07, temAgo:2.12},
+      {t:"S30N6", name:"Lecap 30-nov-26", size:2463, varp:1.67, temJul:2.08, temAgo:2.15},
+      {t:"T15E7", name:"Boncap 15-ene-27", size:6890, varp:1.38, temJul:2.03, temAgo:2.14},
+      {t:"T30A7", name:"Boncap 30-abr-27", size:225, varp:1.14, temJul:2.07, temAgo:2.17},
+      {t:"T31Y7", name:"Boncap 31-may-27", size:4538, varp:0.73, temJul:2.08, temAgo:2.22},
+      {t:"T30J7", name:"Boncap 30-jun-27", size:250, varp:0.56, temJul:2.02, temAgo:2.16},
+    ]},
+  ];
+
+  // ---------------- STATE ----------------
+  let state = { asset:"acciones", period:"ago", table:false };
+
+  const DOMAIN = { acciones:22, bonos:5 };
+
+  function colorScale(domainMax){
+    return d3.scaleLinear()
+      .domain([-domainMax, 0, domainMax])
+      .range(["#a3231f", "#333c52", "#12703c"])
+      .interpolate(d3.interpolateRgb)
+      .clamp(true);
+  }
+
+  function currentVar(d){
+    if(state.asset === "acciones") return state.period === "jul" ? d.jul : d.ago;
+    return d.varp; // bonds: fixed Jul31->Ago28 window
+  }
+
+  function buildHierarchyData(){
+    const src = state.asset === "acciones" ? stockData : bondData;
+    return {
+      name:"root",
+      children: src.map(g => ({
+        name: g.name,
+        children: g.items.map(d => ({ name:d.t, size:d.size, raw:d, group:g.name }))
+      }))
+    };
+  }
+
+  // ---------------- RENDER ----------------
+  const svg = d3.select("#chart");
+  const tooltip = d3.select("#tooltip");
+  const chartWrap = document.getElementById("chart-wrap");
+
+  function render(){
+    const rect = chartWrap.getBoundingClientRect();
+    const width = Math.max(320, rect.width);
+    const height = Math.max(320, rect.height);
+
+    svg.attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio","none");
+    svg.selectAll("*").remove();
+
+    const domainMax = DOMAIN[state.asset];
+    const color = colorScale(domainMax);
+
+    const root = d3.hierarchy(buildHierarchyData())
+      .sum(d => d.size)
+      .sort((a,b) => (b.value||0) - (a.value||0));
+
+    d3.treemap()
+      .tile(d3.treemapSquarify)
+      .size([width, height])
+      .paddingOuter(4)
+      .paddingTop(d => d.depth === 1 ? 22 : 0)
+      .paddingInner(d => d.depth === 1 ? 3 : 2)
+      .round(true)(root);
+
+    // group backgrounds + labels
+    const groups = svg.selectAll("g.group")
+      .data(root.children || [])
+      .enter().append("g")
+      .attr("class","group");
+
+    groups.append("rect")
+      .attr("class","group-bg")
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0)
+      .attr("width", d => Math.max(0, d.x1 - d.x0))
+      .attr("height", d => Math.max(0, d.y1 - d.y0));
+
+    groups.append("text")
+      .attr("class","group-label")
+      .attr("x", d => d.x0 + 7)
+      .attr("y", d => d.y0 + 15)
+      .text(d => d.data.name);
+
+    // leaves
+    const leaves = svg.selectAll("g.leaf")
+      .data(root.leaves())
+      .enter().append("g")
+      .attr("class","leaf")
+      .style("cursor","pointer");
+
+    leaves.append("rect")
+      .attr("class","tile")
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0)
+      .attr("width", d => Math.max(0, d.x1 - d.x0))
+      .attr("height", d => Math.max(0, d.y1 - d.y0))
+      .attr("fill", d => color(currentVar(d.data.raw)));
+
+    leaves.each(function(d){
+      const w = d.x1 - d.x0, h = d.y1 - d.y0;
+      const g = d3.select(this);
+      if(w < 26 || h < 20) return;
+      const cx = d.x0 + w/2, cy = d.y0 + h/2;
+      const big = w > 60 && h > 42;
+      g.append("text")
+        .attr("class","tile-ticker")
+        .attr("x", cx).attr("y", big ? cy - 3 : cy + 4)
+        .attr("text-anchor","middle")
+        .attr("font-size", Math.max(9, Math.min(17, w/6)))
+        .text(d.data.name);
+      if(big){
+        const v = currentVar(d.data.raw);
+        g.append("text")
+          .attr("class","tile-pct")
+          .attr("x", cx).attr("y", cy + 15)
+          .attr("text-anchor","middle")
+          .attr("font-size", Math.max(9, Math.min(14, w/8)))
+          .text((v>0?"+":"") + v.toFixed(2) + "%");
+      }
+    });
+
+    leaves
+      .on("mousemove", function(event, d){
+        showTooltip(event, d.data.raw, d.data.group);
+      })
+      .on("mouseleave", function(){ tooltip.style("display","none"); });
+
+    updateChrome(domainMax);
+  }
+
+  function showTooltip(event, d, group){
+    const isStock = state.asset === "acciones";
+    const v = currentVar(d);
+    const vColor = v >= 0 ? "#4fb06a" : "#e8746a";
+    let rows = "";
+    if(isStock){
+      rows += row("Sector", group);
+      rows += row("Var. julio", fmtPct(d.jul));
+      rows += row("Var. agosto", fmtPct(d.ago));
+      rows += row("Cap. bursátil", fmtM(d.size) + " ARS M");
+    } else {
+      rows += row("Segmento", group);
+      rows += row("Var. precio (jul→ago)", fmtPct(d.varp));
+      if(d.ytmJul !== undefined){
+        rows += row("TIR 31-jul", d.ytmJul.toFixed(2)+"%");
+        rows += row("TIR 28-ago", d.ytmAgo.toFixed(2)+"%");
+        rows += row("Var. TIR", (d.bp>0?"+":"")+d.bp+" pb");
+      } else {
+        rows += row("TEM 31-jul", d.temJul.toFixed(2)+"%");
+        rows += row("TEM 28-ago", d.temAgo.toFixed(2)+"%");
+      }
+      rows += row("Monto emitido (aprox.)", fmtM(d.size) + " USD M");
+    }
+
+    tooltip.style("display","block").html(`
+      <div class="tt-head">
+        <span class="tt-ticker">${d.t}</span>
+        <span class="tt-var" style="color:${vColor}">${fmtPct(v)}</span>
+      </div>
+      <div class="tt-name">${d.name}</div>
+      ${rows}
+    `);
+    positionTooltip(event);
+  }
+  function row(label, val){
+    return `<div class="tt-row"><span>${label}</span><b>${val}</b></div>`;
+  }
+  function fmtPct(v){ return (v>0?"+":"") + v.toFixed(2) + "%"; }
+  function fmtM(v){ return d3.format(",.0f")(v).replace(/,/g, "."); }
+
+  function positionTooltip(event){
+    const pad = 16;
+    let x = event.clientX + pad;
+    let y = event.clientY + pad;
+    const tw = 260, th = 220;
+    if(x + tw > window.innerWidth) x = event.clientX - tw - pad;
+    if(y + th > window.innerHeight) y = event.clientY - th - pad;
+    tooltip.style("left", x+"px").style("top", y+"px");
+  }
+
+  function updateChrome(domainMax){
+    document.getElementById("tick-min").textContent = "-"+domainMax+"%";
+    document.getElementById("tick-max").textContent = "+"+domainMax+"%";
+    document.getElementById("legend-caption").textContent =
+      state.asset === "acciones" ? "Variación MTD del período elegido" : "Variación de precio, 31-jul-26 → 28-ago-26";
+    document.getElementById("th-size").textContent =
+      state.asset === "acciones" ? "Cap. bursátil (ARS M)" : "Monto emitido (USD M aprox.)";
+  }
+
+  // ---------------- TABLE VIEW ----------------
+  function renderTable(){
+    const src = state.asset === "acciones" ? stockData : bondData;
+    let rows = [];
+    src.forEach(g => g.items.forEach(d => rows.push({d, group:g.name})));
+    rows.sort((a,b) => currentVar(b.d) - currentVar(a.d));
+    const tbody = document.getElementById("table-body");
+    tbody.innerHTML = rows.map(({d,group}) => {
+      const v = currentVar(d);
+      const cls = v >= 0 ? "pct-pos" : "pct-neg";
+      return `<tr>
+        <td class="ticker">${d.t}</td>
+        <td>${d.name}</td>
+        <td>${group}</td>
+        <td class="num">${fmtM(d.size)}</td>
+        <td class="num pct ${cls}">${fmtPct(v)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // ---------------- CONTROLS ----------------
+  document.getElementById("asset-toggle").addEventListener("click", e => {
+    const btn = e.target.closest("button"); if(!btn) return;
+    state.asset = btn.dataset.asset;
+    document.querySelectorAll("#asset-toggle button").forEach(b => b.classList.toggle("active", b === btn));
+    const periodBtns = document.querySelectorAll("#period-toggle button");
+    if(state.asset === "bonos"){
+      periodBtns.forEach(b => b.disabled = true);
+    } else {
+      periodBtns.forEach(b => b.disabled = false);
+    }
+    refresh();
+  });
+
+  document.getElementById("period-toggle").addEventListener("click", e => {
+    const btn = e.target.closest("button"); if(!btn || btn.disabled) return;
+    state.period = btn.dataset.period;
+    document.querySelectorAll("#period-toggle button").forEach(b => b.classList.toggle("active", b === btn));
+    refresh();
+  });
+
+  document.getElementById("table-toggle").addEventListener("click", () => {
+    state.table = !state.table;
+    document.getElementById("table-toggle").classList.toggle("active", state.table);
+    document.getElementById("table-toggle").textContent = state.table ? "Ver mapa" : "Ver tabla";
+    document.getElementById("chart-wrap").style.display = state.table ? "none" : "block";
+    document.getElementById("table-wrap").style.display = state.table ? "block" : "none";
+    refresh();
+  });
+
+  function refresh(){
+    if(state.table) renderTable(); else render();
+  }
+
+  window.addEventListener("resize", () => { if(!state.table) render(); });
+
+  refresh();
+})();
+</script>
