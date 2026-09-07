@@ -1,0 +1,369 @@
+<title>UCI Textil vs. Industria</title>
+<style>
+  :root{
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-general: #2a78d6;
+    --series-textil:  #eb6834;
+    --tooltip-bg:     #0b0b0b;
+    --tooltip-text:   #fcfcfb;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-general: #3987e5;
+      --series-textil:  #d95926;
+      --tooltip-bg:     #fcfcfb;
+      --tooltip-text:   #0b0b0b;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page-plane:     #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-general: #3987e5;
+    --series-textil:  #d95926;
+    --tooltip-bg:     #fcfcfb;
+    --tooltip-text:   #0b0b0b;
+  }
+
+  *{ box-sizing: border-box; }
+  body{
+    background: var(--page-plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 28px 20px 32px;
+  }
+  .card{
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 20px 14px;
+  }
+  .card-head{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .card-head h1{
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 3px;
+  }
+  .card-head p{
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .legend{
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .legend button{
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 2px;
+    opacity: 1;
+    transition: opacity .15s ease;
+  }
+  .legend button.off{ opacity: 0.35; }
+  .legend .swatch{
+    width: 20px; height: 3px; border-radius: 2px; flex: none;
+  }
+
+  .chart-shell{ position: relative; }
+  svg{ display: block; width: 100%; height: auto; overflow: visible; }
+  .gridline{ stroke: var(--gridline); stroke-width: 1; }
+  .axis-line{ stroke: var(--baseline); stroke-width: 1; }
+  .tick-label{ fill: var(--text-muted); font-size: 11px; font-family: system-ui, sans-serif; }
+  .series-line{ fill: none; stroke-width: 2; }
+  .hover-dot{ fill: var(--surface-1); stroke-width: 2; }
+  .crosshair{ stroke: var(--baseline); stroke-width: 1; stroke-dasharray: 3 3; }
+  .hit-layer{ fill: transparent; cursor: crosshair; }
+
+  .tooltip{
+    position: absolute;
+    pointer-events: none;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 8px;
+    padding: 8px 10px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, -100%);
+    transition: opacity .1s ease;
+    z-index: 5;
+  }
+  .tooltip .t-month{ font-weight: 600; margin-bottom: 2px; }
+  .tooltip .t-row{ display: flex; align-items: center; gap: 6px; }
+  .tooltip .t-dot{ width: 7px; height: 7px; border-radius: 50%; flex: none; }
+
+  .source-row{
+    font-size: 12px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    margin-top: 14px;
+    padding-top: 10px;
+  }
+</style>
+
+<div class="wrap">
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h1>Evolución UCI industria en general y del sector textil</h1>
+        <p>Serie desestacionalizada. En porcentajes.</p>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="chart-shell" id="chartShell">
+      <svg id="chartSvg" viewBox="0 0 860 380" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+    <div class="source-row">Fuente: FITA a partir de INDEC</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var labels = [
+    "ene-23","feb-23","mar-23","abr-23","may-23","jun-23","jul-23","ago-23","sep-23","oct-23","nov-23","dic-23",
+    "ene-24","feb-24","mar-24","abr-24","may-24","jun-24","jul-24","ago-24","sep-24","oct-24","nov-24","dic-24",
+    "ene-25","feb-25","mar-25","abr-25","may-25","jun-25","jul-25","ago-25","sep-25","oct-25","nov-25","dic-25",
+    "ene-26","feb-26","mar-26","abr-26","may-26","jun-26"
+  ];
+  var general = [
+    66.2,66.8,68.0,67.0,66.0,65.5,65.8,64.5,63.5,62.0,59.5,58.5,
+    59.5,58.0,57.5,58.5,54.0,55.5,58.0,59.0,60.0,60.5,59.5,59.0,
+    59.5,59.8,59.5,58.5,55.0,58.9,58.0,58.5,59.0,57.5,55.0,55.5,
+    57.0,58.5,60.0,60.5,58.3,59.1
+  ];
+  var textil = [
+    49.5,51.5,54.5,56.5,58.0,57.5,58.0,58.3,57.0,54.0,56.5,58.5,
+    55.0,47.0,46.0,45.5,41.0,41.5,40.0,38.5,41.5,45.0,46.5,47.5,
+    47.8,51.0,43.0,46.0,44.0,50.4,46.5,47.0,40.0,34.0,31.5,29.0,
+    43.0,32.0,39.5,44.5,42.2,46.6
+  ];
+
+  var W = 860, H = 380;
+  var padL = 34, padR = 10, padT = 10, padB = 28;
+  var plotW = W - padL - padR;
+  var plotH = H - padT - padB;
+  var yMin = 25, yMax = 70, yStep = 5;
+
+  function cssVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  function fmt(v){ return v.toFixed(1).replace(".", ",") + "%"; }
+  function xAt(i){ return padL + (i / (labels.length - 1)) * plotW; }
+  function yAt(v){ return padT + (1 - (v - yMin) / (yMax - yMin)) * plotH; }
+
+  var svgns = "http://www.w3.org/2000/svg";
+  function el(tag, attrs){
+    var e = document.createElementNS(svgns, tag);
+    for (var k in attrs){ e.setAttribute(k, attrs[k]); }
+    return e;
+  }
+
+  function smoothPath(values){
+    var pts = values.map(function(v, i){ return [xAt(i), yAt(v)]; });
+    if (pts.length < 3) {
+      return "M" + pts.map(function(p){ return p[0] + "," + p[1]; }).join(" L");
+    }
+    var d = "M" + pts[0][0] + "," + pts[0][1];
+    for (var i = 0; i < pts.length - 1; i++){
+      var p0 = pts[i === 0 ? 0 : i - 1];
+      var p1 = pts[i];
+      var p2 = pts[i + 1];
+      var p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+      var c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      var c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      var c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      var c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += " C" + c1x + "," + c1y + " " + c2x + "," + c2y + " " + p2[0] + "," + p2[1];
+    }
+    return d;
+  }
+
+  var seriesVisible = { general: true, textil: true };
+  var svg = document.getElementById("chartSvg");
+  var tooltip = document.getElementById("tooltip");
+  var shell = document.getElementById("chartShell");
+
+  var gGeneral, gTextil, dotGeneral, dotTextil, crosshairLine;
+
+  function render(){
+    svg.innerHTML = "";
+    var cGeneral = cssVar("--series-general");
+    var cTextil = cssVar("--series-textil");
+
+    // gridlines + y labels
+    for (var v = yMin; v <= yMax; v += yStep){
+      var y = yAt(v);
+      svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: y, y2: y, class: "gridline" }));
+      var t = el("text", { x: padL - 8, y: y + 3, "text-anchor": "end", class: "tick-label" });
+      t.textContent = v + "%";
+      svg.appendChild(t);
+    }
+    // x axis baseline
+    svg.appendChild(el("line", { x1: padL, x2: W - padR, y1: H - padB, y2: H - padB, class: "axis-line" }));
+    // x labels (every 4th month)
+    labels.forEach(function(lab, i){
+      if (i % 4 === 0){
+        var x = xAt(i);
+        var t = el("text", { x: x, y: H - padB + 16, "text-anchor": "middle", class: "tick-label" });
+        t.textContent = lab;
+        svg.appendChild(t);
+      }
+    });
+
+    // series paths
+    gTextil = el("path", { d: smoothPath(textil), class: "series-line", stroke: cTextil });
+    gGeneral = el("path", { d: smoothPath(general), class: "series-line", stroke: cGeneral });
+    if (seriesVisible.textil) svg.appendChild(gTextil);
+    if (seriesVisible.general) svg.appendChild(gGeneral);
+
+    // hover elements (added after lines so they sit on top)
+    crosshairLine = el("line", { x1: 0, x2: 0, y1: padT, y2: H - padB, class: "crosshair", style: "display:none" });
+    svg.appendChild(crosshairLine);
+    dotGeneral = el("circle", { r: 4, class: "hover-dot", stroke: cGeneral, style: "display:none" });
+    dotTextil = el("circle", { r: 4, class: "hover-dot", stroke: cTextil, style: "display:none" });
+    svg.appendChild(dotGeneral);
+    svg.appendChild(dotTextil);
+
+    // hit layer
+    var hit = el("rect", { x: padL, y: padT, width: plotW, height: plotH, class: "hit-layer" });
+    svg.appendChild(hit);
+
+    hit.addEventListener("mousemove", onMove);
+    hit.addEventListener("mouseleave", onLeave);
+    hit.addEventListener("touchmove", function(e){
+      if (e.touches && e.touches[0]) onMove(e.touches[0]);
+    }, { passive: true });
+    hit.addEventListener("touchend", onLeave);
+  }
+
+  function onMove(evt){
+    var rect = svg.getBoundingClientRect();
+    var scaleX = W / rect.width;
+    var localX = (evt.clientX - rect.left) * scaleX;
+    var ratio = (localX - padL) / plotW;
+    var i = Math.round(ratio * (labels.length - 1));
+    if (i < 0) i = 0;
+    if (i > labels.length - 1) i = labels.length - 1;
+
+    var x = xAt(i);
+    crosshairLine.setAttribute("x1", x);
+    crosshairLine.setAttribute("x2", x);
+    crosshairLine.style.display = "block";
+
+    var rows = "";
+    if (seriesVisible.general){
+      dotGeneral.setAttribute("cx", x);
+      dotGeneral.setAttribute("cy", yAt(general[i]));
+      dotGeneral.style.display = "block";
+      rows += '<div class="t-row"><span class="t-dot" style="background:' + cssVar("--series-general") + '"></span>Nivel General: ' + fmt(general[i]) + '</div>';
+    } else {
+      dotGeneral.style.display = "none";
+    }
+    if (seriesVisible.textil){
+      dotTextil.setAttribute("cx", x);
+      dotTextil.setAttribute("cy", yAt(textil[i]));
+      dotTextil.style.display = "block";
+      rows += '<div class="t-row"><span class="t-dot" style="background:' + cssVar("--series-textil") + '"></span>Textil: ' + fmt(textil[i]) + '</div>';
+    } else {
+      dotTextil.style.display = "none";
+    }
+
+    tooltip.innerHTML = '<div class="t-month">' + labels[i] + '</div>' + rows;
+    tooltip.style.opacity = "1";
+
+    var shellRect = shell.getBoundingClientRect();
+    var svgScale = shellRect.width / W;
+    var px = padL * svgScale + (x - padL) * svgScale;
+    var py = yAt(Math.max(
+      seriesVisible.general ? general[i] : -Infinity,
+      seriesVisible.textil ? textil[i] : -Infinity
+    )) * svgScale;
+    tooltip.style.left = px + "px";
+    tooltip.style.top = Math.max(py - 12, 20) + "px";
+  }
+
+  function onLeave(){
+    crosshairLine.style.display = "none";
+    dotGeneral.style.display = "none";
+    dotTextil.style.display = "none";
+    tooltip.style.opacity = "0";
+  }
+
+  function buildLegend(){
+    var elc = document.getElementById("legend");
+    elc.innerHTML = "";
+    var defs = [
+      { key: "general", label: "Nivel General", color: cssVar("--series-general") },
+      { key: "textil", label: "Textil", color: cssVar("--series-textil") }
+    ];
+    defs.forEach(function(d){
+      var btn = document.createElement("button");
+      btn.className = seriesVisible[d.key] ? "" : "off";
+      btn.innerHTML = '<span class="swatch" style="background:' + d.color + '"></span>' + d.label;
+      btn.addEventListener("click", function(){
+        seriesVisible[d.key] = !seriesVisible[d.key];
+        btn.classList.toggle("off", !seriesVisible[d.key]);
+        onLeave();
+        render();
+      });
+      elc.appendChild(btn);
+    });
+  }
+
+  render();
+  buildLegend();
+
+  var mq = window.matchMedia("(prefers-color-scheme: dark)");
+  mq.addEventListener("change", function(){ render(); buildLegend(); });
+
+  var mo = new MutationObserver(function(){ render(); buildLegend(); });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
