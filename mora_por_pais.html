@@ -1,0 +1,447 @@
+<title>Morosidad por país</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-base:    #2a78d6;
+    --series-hi:      #eb6834;
+    --ref-line:       #52514e;
+    --btn-bg:         #f0efec;
+    --btn-bg-active:  #0b0b0b;
+    --btn-fg-active:  #fcfcfb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-base:    #3987e5;
+      --series-hi:      #d95926;
+      --ref-line:       #c3c2b7;
+      --btn-bg:         #2c2c2a;
+      --btn-bg-active:  #ffffff;
+      --btn-fg-active:  #0b0b0b;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-base:    #3987e5;
+    --series-hi:      #d95926;
+    --ref-line:       #c3c2b7;
+    --btn-bg:         #2c2c2a;
+    --btn-bg-active:  #ffffff;
+    --btn-fg-active:  #0b0b0b;
+  }
+
+  .viz-root {
+    background: var(--page);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text-primary);
+    padding: 20px 14px 28px;
+    box-sizing: border-box;
+  }
+  .viz-card {
+    max-width: 680px;
+    margin: 0 auto;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px 16px;
+    box-sizing: border-box;
+  }
+  .viz-eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+  }
+  .viz-title {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0 0 6px;
+  }
+  .viz-sub {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    margin: 0 0 16px;
+  }
+  .viz-toggle {
+    display: inline-flex;
+    gap: 4px;
+    background: var(--btn-bg);
+    padding: 3px;
+    border-radius: 8px;
+    margin-bottom: 22px;
+  }
+  .viz-toggle button {
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 7px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .viz-toggle button[aria-pressed="true"] {
+    background: var(--btn-bg-active);
+    color: var(--btn-fg-active);
+  }
+  .viz-toggle button:hover:not([aria-pressed="true"]) { color: var(--text-primary); }
+
+  .viz-plot { position: relative; }
+  .viz-refline {
+    position: absolute;
+    top: -18px; bottom: 0;
+    width: 0;
+    border-left: 1.5px dashed var(--ref-line);
+    display: none;
+  }
+  .viz-refline .lbl {
+    position: absolute;
+    top: -18px;
+    left: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .viz-rows { display: flex; flex-direction: column; gap: 3px; position: relative; }
+  .viz-row {
+    display: grid;
+    grid-template-columns: 92px 1fr 70px;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+  }
+  .viz-row:hover, .viz-row:focus-visible { background: var(--btn-bg); }
+  .viz-row .cname {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .viz-row.hi .cname { color: var(--series-hi); }
+  .viz-row.nodata .cname { color: var(--text-muted); }
+
+  .viz-track {
+    position: relative;
+    height: 22px;
+    background: var(--gridline);
+    border-radius: 4px;
+  }
+  .viz-bar {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: var(--series-base);
+    border-radius: 0 4px 4px 0;
+    transition: filter .1s ease;
+  }
+  .viz-row.hi .viz-bar { background: var(--series-hi); }
+  .viz-row.nodata .viz-bar { display: none; }
+  .viz-row:hover .viz-bar, .viz-row:focus-visible .viz-bar { filter: brightness(1.12); }
+  .viz-nodata-lbl {
+    position: absolute;
+    left: 8px; top: 0; bottom: 0;
+    display: flex; align-items: center;
+    font-size: 11.5px;
+    font-style: italic;
+    color: var(--text-muted);
+  }
+  .viz-val {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .viz-row.hi .viz-val { color: var(--series-hi); }
+  .viz-row.nodata .viz-val { color: var(--text-muted); font-weight: 500; font-style: italic; }
+
+  .viz-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 16px 0 0;
+    flex-wrap: wrap;
+  }
+  .viz-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--series-hi); flex: none; }
+  .viz-note .sep { color: var(--gridline); }
+
+  .viz-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--text-primary);
+    color: var(--surface-1);
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 8px 10px;
+    border-radius: 8px;
+    max-width: 250px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity .1s ease;
+  }
+  .viz-tooltip.show { opacity: 1; }
+  .viz-tooltip b { font-variant-numeric: tabular-nums; font-size: 13px; }
+  .viz-tooltip .src { display: block; margin-top: 3px; opacity: .75; }
+
+  .viz-foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--gridline); }
+  .viz-foot summary { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; list-style: none; }
+  .viz-foot summary::-webkit-details-marker { display: none; }
+  .viz-foot summary:before { content: "▸ "; }
+  .viz-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12.5px; }
+  .viz-table th, .viz-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--gridline); }
+  .viz-table td:nth-child(2) { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .viz-table th { color: var(--text-muted); font-weight: 600; }
+  .viz-source { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin: 10px 0 0; }
+</style>
+
+<div class="viz-root">
+  <div class="viz-card">
+    <p class="viz-eyebrow">Crédito caro y ahorro barato</p>
+    <h2 class="viz-title" id="chartTitle">Morosidad del crédito privado, por país</h2>
+    <p class="viz-sub" id="chartSub">Porcentaje de la cartera de crédito en situación irregular, según la fuente oficial de cada país (datos de marzo a julio de 2026).</p>
+
+    <div class="viz-toggle" role="group" aria-label="Elegir recorte de la mora">
+      <button type="button" data-view="total" aria-pressed="true">Mora total del sistema</button>
+      <button type="button" data-view="consumo" aria-pressed="false">Mora en consumo / familias</button>
+    </div>
+
+    <div class="viz-plot">
+      <div class="viz-refline" id="refLine"><span class="lbl" id="refLbl"></span></div>
+      <div class="viz-rows" id="rows" role="list"></div>
+    </div>
+
+    <p class="viz-note">
+      <span class="viz-dot"></span> Argentina, destacada
+      <span class="sep" id="refSep">·</span>
+      <span id="refNote"></span>
+    </p>
+
+    <details class="viz-foot">
+      <summary>Ver como tabla</summary>
+      <table class="viz-table" id="tableView">
+        <thead><tr><th>País</th><th>Mora</th><th>Fuente y fecha</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </details>
+
+    <p class="viz-source" id="srcNote"></p>
+  </div>
+</div>
+
+<div class="viz-tooltip" id="tip"></div>
+
+<script>
+(function () {
+  const DATA = {
+    total: {
+      title: "Morosidad del crédito privado, por país",
+      sub: "Porcentaje de la cartera de crédito en situación irregular, según la fuente oficial de cada país (datos de marzo a julio de 2026).",
+      max: 8.2,
+      ref: { value: 2.78, label: "Promedio regional (Felaban): 2,78%" },
+      refNoteShort: "Línea punteada: promedio de Felaban sobre ~540 bancos, 1er trimestre 2026",
+      srcNote: "Fuente de cada dato: bancos centrales y superintendencias bancarias oficiales de cada país (ver detalle en la tabla). El promedio regional es el que releva la Federación Latinoamericana de Bancos (Felaban) para el primer trimestre de 2026.",
+      rows: [
+        { c: "Argentina", v: 7.6, hi: true, src: "Cartera irregular total del sistema — BCRA, Informe sobre Bancos, junio de 2026" },
+        { c: "Brasil", v: 4.9, hi: false, src: "Inadimplência total — Banco Central do Brasil, serie SGS 21082, julio de 2026" },
+        { c: "Colombia", v: 4.4, hi: false, src: "Indicador de calidad de cartera (ICM) — Banco de la República, Reporte de Estabilidad Financiera, marzo de 2026" },
+        { c: "Perú", v: 3.3, hi: false, src: "Morosidad del sistema financiero — SBS, marzo de 2026" },
+        { c: "Bolivia", v: 2.9, hi: false, src: "Mora del sistema financiero — ASFI, marzo de 2026" },
+        { c: "Paraguay", v: 2.5, hi: false, src: "Mora del sistema financiero — Banco Central del Paraguay, Informe de Estabilidad Financiera, marzo de 2026" },
+        { c: "Chile", v: 2.4, hi: false, src: "Mora mayor a 90 días — CMF, comunicado sobre desempeño de bancos, marzo de 2026 (cartera deteriorada total: 6,0%)" },
+        { c: "Uruguay", v: 1.7, hi: false, src: "Cifra del sistema bancario, junio de 2026, consistente con el dato relevado por Felaban" }
+      ]
+    },
+    consumo: {
+      title: "Morosidad en el crédito a consumo y familias",
+      sub: "Solo se muestran los países con una cifra oficial comparable de mora en consumo/familias en su último reporte disponible.",
+      max: 13.5,
+      ref: null,
+      refNoteShort: "",
+      srcNote: "Chile, Bolivia, Paraguay y Uruguay no publican, en su último reporte oficial, una cifra desagregada de mora específica para consumo/familias comparable a la del resto — por eso no tienen barra. Colombia se muestra como rango porque el Banco de la República publica la mora por sub-modalidad de consumo, no un único total.",
+      rows: [
+        { c: "Argentina", v: 12.8, hi: true, src: "Mora de las financiaciones a familias — BCRA, Informe sobre Bancos, junio de 2026 (personales 16,4%, tarjetas 12,6%, prendarios 7,9%, hipotecarios 1,6%)" },
+        { c: "Perú", v: 6.2, hi: false, src: "Mora de créditos de consumo — SBS, marzo de 2026" },
+        { c: "Brasil", v: 5.8, hi: false, src: "Mora de personas físicas — BCB, serie SGS 21084, junio de 2026 (tarjetas de crédito: 9,6%)" },
+        { c: "Colombia", range: [0.7, 8.4], hi: false, src: "Rango de mora entre las distintas sub-modalidades de consumo — Banco de la República, febrero de 2026" },
+        { c: "Chile", nodata: true, hi: false, src: "La CMF no desagrega mora de consumo/familias en su comunicado de marzo de 2026" },
+        { c: "Bolivia", nodata: true, hi: false, src: "La ASFI no desagrega mora de consumo/familias en su reporte de marzo de 2026" },
+        { c: "Paraguay", nodata: true, hi: false, src: "El BCP no desagrega mora de consumo/familias en su Informe de Estabilidad Financiera de marzo de 2026" },
+        { c: "Uruguay", nodata: true, hi: false, src: "No hay cifra oficial desagregada de consumo/familias disponible" }
+      ]
+    }
+  };
+
+  const rowsEl = document.getElementById("rows");
+  const tip = document.getElementById("tip");
+  const tableBody = document.querySelector("#tableView tbody");
+  const titleEl = document.getElementById("chartTitle");
+  const subEl = document.getElementById("chartSub");
+  const srcEl = document.getElementById("srcNote");
+  const refNoteEl = document.getElementById("refNote");
+  const refLineEl = document.getElementById("refLine");
+  const refLblEl = document.getElementById("refLbl");
+  const buttons = document.querySelectorAll(".viz-toggle button");
+
+  function fmt(n) { return n.toLocaleString("es-AR", { maximumFractionDigits: 1 }); }
+
+  function render(viewKey) {
+    const view = DATA[viewKey];
+    titleEl.textContent = view.title;
+    subEl.textContent = view.sub;
+    srcEl.textContent = view.srcNote;
+    refNoteEl.textContent = view.refNoteShort;
+    document.getElementById("refSep").style.display = view.refNoteShort ? "inline" : "none";
+    const max = view.max;
+
+    if (view.ref) {
+      const pct = (view.ref.value / max) * 100;
+      refLineEl.style.display = "block";
+      refLineEl.style.left = "calc(92px + 10px + " + pct + "% * (100% - 92px - 10px - 70px - 10px) / 100%)";
+      refLblEl.textContent = view.ref.label;
+    } else {
+      refLineEl.style.display = "none";
+    }
+
+    rowsEl.innerHTML = "";
+    tableBody.innerHTML = "";
+
+    view.rows.forEach(r => {
+      const row = document.createElement("div");
+      row.className = "viz-row" + (r.hi ? " hi" : "") + (r.nodata ? " nodata" : "");
+      row.setAttribute("role", "listitem");
+      row.tabIndex = 0;
+
+      const name = document.createElement("div");
+      name.className = "cname";
+      name.textContent = r.c;
+
+      const track = document.createElement("div");
+      track.className = "viz-track";
+
+      let valText = "";
+      if (r.nodata) {
+        const lbl = document.createElement("div");
+        lbl.className = "viz-nodata-lbl";
+        lbl.textContent = "sin dato oficial desagregado";
+        track.appendChild(lbl);
+        valText = "s/d";
+      } else if (r.range) {
+        const bar = document.createElement("div");
+        bar.className = "viz-bar";
+        const leftPct = (r.range[0] / max) * 100;
+        const widthPct = ((r.range[1] - r.range[0]) / max) * 100;
+        bar.style.left = leftPct + "%";
+        bar.style.width = widthPct + "%";
+        track.appendChild(bar);
+        valText = fmt(r.range[0]) + "–" + fmt(r.range[1]) + "%";
+      } else {
+        const bar = document.createElement("div");
+        bar.className = "viz-bar";
+        bar.style.left = "0%";
+        bar.style.width = ((r.v / max) * 100) + "%";
+        track.appendChild(bar);
+        valText = fmt(r.v) + "%";
+      }
+
+      const val = document.createElement("div");
+      val.className = "viz-val";
+      val.textContent = valText;
+
+      row.appendChild(name);
+      row.appendChild(track);
+      row.appendChild(val);
+
+      function showTip(evt) {
+        tip.innerHTML = "";
+        const line1 = document.createElement("div");
+        const strong = document.createElement("b");
+        strong.textContent = valText;
+        line1.appendChild(document.createTextNode(r.c + ": "));
+        line1.appendChild(strong);
+        const srcSpan = document.createElement("span");
+        srcSpan.className = "src";
+        srcSpan.textContent = r.src;
+        tip.appendChild(line1);
+        tip.appendChild(srcSpan);
+        tip.classList.add("show");
+        positionTip(evt);
+      }
+      function positionTip(evt) {
+        const x = (evt && evt.clientX != null) ? evt.clientX : row.getBoundingClientRect().right;
+        const y = (evt && evt.clientY != null) ? evt.clientY : row.getBoundingClientRect().top;
+        const tw = 250;
+        let left = x + 14;
+        if (left + tw > window.innerWidth - 8) left = x - tw - 14;
+        tip.style.left = left + "px";
+        tip.style.top = (y + 14) + "px";
+      }
+      function hideTip() { tip.classList.remove("show"); }
+
+      row.addEventListener("pointermove", showTip);
+      row.addEventListener("pointerenter", showTip);
+      row.addEventListener("pointerleave", hideTip);
+      row.addEventListener("focus", () => showTip(null));
+      row.addEventListener("blur", hideTip);
+
+      rowsEl.appendChild(row);
+
+      const tr = document.createElement("tr");
+      const tdC = document.createElement("td");
+      tdC.textContent = r.c;
+      const tdV = document.createElement("td");
+      tdV.textContent = valText;
+      const tdS = document.createElement("td");
+      tdS.textContent = r.src;
+      tr.appendChild(tdC); tr.appendChild(tdV); tr.appendChild(tdS);
+      tableBody.appendChild(tr);
+    });
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      buttons.forEach(b => b.setAttribute("aria-pressed", "false"));
+      btn.setAttribute("aria-pressed", "true");
+      render(btn.dataset.view);
+    });
+  });
+
+  render("total");
+})();
+</script>

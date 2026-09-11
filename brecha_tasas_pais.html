@@ -1,0 +1,403 @@
+<title>Brecha de tasas por país</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-base:    #2a78d6;
+    --series-base-bg: #cde2fb;
+    --series-hi:      #eb6834;
+    --series-hi-bg:   #f8d9c8;
+    --btn-bg:         #f0efec;
+    --btn-bg-active:  #0b0b0b;
+    --btn-fg-active:  #fcfcfb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-base:    #3987e5;
+      --series-base-bg: #16324f;
+      --series-hi:      #d95926;
+      --series-hi-bg:   #4a2c1a;
+      --btn-bg:         #2c2c2a;
+      --btn-bg-active:  #ffffff;
+      --btn-fg-active:  #0b0b0b;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page:           #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-base:    #3987e5;
+    --series-base-bg: #16324f;
+    --series-hi:      #d95926;
+    --series-hi-bg:   #4a2c1a;
+    --btn-bg:         #2c2c2a;
+    --btn-bg-active:  #ffffff;
+    --btn-fg-active:  #0b0b0b;
+  }
+
+  .viz-root {
+    background: var(--page);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text-primary);
+    padding: 20px 14px 28px;
+    box-sizing: border-box;
+  }
+  .viz-card {
+    max-width: 680px;
+    margin: 0 auto;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px 16px;
+    box-sizing: border-box;
+  }
+  .viz-eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+  }
+  .viz-title {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0 0 6px;
+    color: var(--text-primary);
+  }
+  .viz-sub {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    margin: 0 0 16px;
+  }
+  .viz-toggle {
+    display: inline-flex;
+    gap: 4px;
+    background: var(--btn-bg);
+    padding: 3px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+  }
+  .viz-toggle button {
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 7px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .viz-toggle button[aria-pressed="true"] {
+    background: var(--btn-bg-active);
+    color: var(--btn-fg-active);
+  }
+  .viz-toggle button:hover:not([aria-pressed="true"]) {
+    color: var(--text-primary);
+  }
+
+  .viz-rows { display: flex; flex-direction: column; gap: 3px; }
+  .viz-row {
+    display: grid;
+    grid-template-columns: 92px 1fr 58px;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+  }
+  .viz-row:hover, .viz-row:focus-visible {
+    background: var(--btn-bg);
+  }
+  .viz-row .cname {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .viz-row.hi .cname { color: var(--series-hi); }
+  .viz-track {
+    position: relative;
+    height: 22px;
+    background: var(--gridline);
+    border-radius: 4px;
+    overflow: visible;
+  }
+  .viz-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--series-base);
+    border-radius: 0 4px 4px 0;
+    transition: filter .1s ease;
+  }
+  .viz-row.hi .viz-bar { background: var(--series-hi); }
+  .viz-row:hover .viz-bar, .viz-row:focus-visible .viz-bar { filter: brightness(1.12); }
+  .viz-val {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    text-align: right;
+  }
+  .viz-row.hi .viz-val { color: var(--series-hi); }
+
+  .viz-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 14px 0 0;
+  }
+  .viz-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--series-hi); flex: none; }
+
+  .viz-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--text-primary);
+    color: var(--surface-1);
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 8px 10px;
+    border-radius: 8px;
+    max-width: 240px;
+    z-index: 10;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity .1s ease;
+  }
+  .viz-tooltip.show { opacity: 1; }
+  .viz-tooltip b { font-variant-numeric: tabular-nums; font-size: 13px; }
+  .viz-tooltip .src { display:block; margin-top:3px; opacity:.75; }
+
+  .viz-foot {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gridline);
+  }
+  .viz-foot summary {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    list-style: none;
+  }
+  .viz-foot summary::-webkit-details-marker { display: none; }
+  .viz-foot summary:before { content: "▸ "; }
+  details[open] .viz-foot-sum:before { content: "▾ "; }
+  .viz-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12.5px; }
+  .viz-table th, .viz-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--gridline); }
+  .viz-table td:nth-child(2) { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .viz-table th { color: var(--text-muted); font-weight: 600; }
+  .viz-source {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 10px 0 0;
+  }
+</style>
+
+<div class="viz-root">
+  <div class="viz-card">
+    <p class="viz-eyebrow">Crédito caro y ahorro barato</p>
+    <h2 class="viz-title" id="chartTitle">La brecha entre lo que cobran los bancos por un crédito y lo que pagan por un plazo fijo, por país</h2>
+    <p class="viz-sub" id="chartSub">Puntos porcentuales entre la tasa de un préstamo de consumo y la de un depósito a plazo, calculada con la fuente oficial de cada banco central (ene-sep 2026).</p>
+
+    <div class="viz-toggle" role="group" aria-label="Elegir metodología">
+      <button type="button" data-view="minorista" aria-pressed="true">Brecha minorista (bancos centrales)</button>
+      <button type="button" data-view="mayorista" aria-pressed="false">Spread "mayorista" (Banco Mundial/FMI)</button>
+    </div>
+
+    <div class="viz-rows" id="rows" role="list"></div>
+
+    <p class="viz-note"><span class="viz-dot"></span> Argentina, destacada</p>
+
+    <details class="viz-foot">
+      <summary class="viz-foot-sum">Ver como tabla</summary>
+      <table class="viz-table" id="tableView">
+        <thead><tr><th>País</th><th>Brecha (p.p.)</th><th>Fuente y fecha</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </details>
+
+    <p class="viz-source" id="srcNote"></p>
+  </div>
+</div>
+
+<div class="viz-tooltip" id="tip"></div>
+
+<script>
+(function () {
+  const DATA = {
+    minorista: {
+      title: "La brecha entre lo que cobran los bancos por un crédito y lo que pagan por un plazo fijo, por país",
+      sub: "Puntos porcentuales entre la tasa de un préstamo de consumo y la de un depósito a plazo, calculada con la fuente oficial de cada banco central (ene-sep 2026).",
+      unit: "p.p.",
+      srcNote: "Brecha minorista: reconstrucción propia con la tasa de crédito personal/consumo menos la tasa de depósito a plazo, tomadas directamente de cada banco central o superintendencia (no de agregadores privados ni prensa). Uruguay usa las pizarras del BROU en reemplazo del sitio del Banco Central del Uruguay, inaccesible por un error de certificado del sitio; Colombia toma la DTF de Banrep vía La República, por no poder renderizarse el contenido dinámico del sitio del banco central. Ver metodología completa en la nota.",
+      rows: [
+        { c: "Brasil", v: 97, hi: false, src: "Préstamo personal 111,0% TEA (BCB, SGS 25464, jul-26) menos referencia Selic 14,00% (BCB, SGS 432, sep-26)" },
+        { c: "Argentina", v: 43, hi: true, src: "Préstamos personales 63,81% TNA menos depósitos a 30 días 20,76% TNA (BCRA, API de Estadísticas, 04-sep-26)" },
+        { c: "México", v: 34, hi: false, src: "Crédito personal 40,5% (Banxico, Indicadores básicos, créditos sep-24/ago-25) menos CETES 28d 6,49% (Banxico SIE, 03-sep-26)" },
+        { c: "Chile", v: 21, hi: false, src: "Crédito de consumo 25,6% menos depósito 30-89 días 4,2% (Banco Central de Chile, Informe Mensual, may-26)" },
+        { c: "Uruguay", v: 19, hi: false, src: "Consumo ~23,5% TEA menos plazo fijo ~4,2% TEA (BROU, pizarras oficiales, jul/sep-26)" },
+        { c: "Paraguay", v: 16, hi: false, src: "Personales/consumo 22,6% menos depósito a plazo 6,5% (Banco Central del Paraguay, ene-26)" },
+        { c: "Perú", v: 14, hi: false, src: "Consumo +360d 18,4% menos depósito +360d 4,6% (BCRP, series oficiales, jul/ago-26)" },
+        { c: "Colombia", v: 9, hi: false, src: "Interés bancario corriente de consumo 19,49% menos DTF 10,05% (Superfinanciera / Banrep, sep-26)" },
+        { c: "Bolivia", v: 8, hi: false, src: "Consumo ~17,0% menos plazo a 360 días ~9,4% (Banco Central de Bolivia, jun-26)" }
+      ]
+    },
+    mayorista: {
+      title: "El mismo ranking, con el indicador estandarizado del Banco Mundial",
+      sub: "Diferencia entre la tasa activa y la pasiva promedio de todo el sistema (incluye crédito comercial y corporativo), tal como la reportan los bancos centrales al FMI.",
+      unit: "%",
+      srcNote: "Indicador FR.INR.LNDP del Banco Mundial / FMI International Financial Statistics. Mezcla crédito minorista y mayorista (empresas grandes), por lo que subestima sistemáticamente el costo real del crédito a personas — ver la comparación con la brecha minorista en la nota.",
+      rows: [
+        { c: "Brasil", v: 32.5, hi: false, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2024" },
+        { c: "Paraguay", v: 9.1, hi: false, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2021" },
+        { c: "Perú", v: 7.8, hi: false, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2022" },
+        { c: "Argentina", v: 7.5, hi: true, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2024" },
+        { c: "México", v: 6.7, hi: false, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2024" },
+        { c: "Colombia", v: 6.2, hi: false, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2024" },
+        { c: "Bolivia", v: 5.6, hi: false, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2024" },
+        { c: "Uruguay", v: 2.6, hi: false, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2024" },
+        { c: "Chile", v: 1.5, hi: false, src: "Banco Mundial / FMI, indicador FR.INR.LNDP, dato 2018 (desactualizado)" }
+      ]
+    }
+  };
+
+  const rowsEl = document.getElementById("rows");
+  const tip = document.getElementById("tip");
+  const tableBody = document.querySelector("#tableView tbody");
+  const titleEl = document.getElementById("chartTitle");
+  const subEl = document.getElementById("chartSub");
+  const srcEl = document.getElementById("srcNote");
+  const buttons = document.querySelectorAll(".viz-toggle button");
+
+  function fmt(n) {
+    return n.toLocaleString("es-AR", { maximumFractionDigits: 1 });
+  }
+
+  function render(viewKey) {
+    const view = DATA[viewKey];
+    titleEl.textContent = view.title;
+    subEl.textContent = view.sub;
+    srcEl.textContent = view.srcNote;
+    const max = Math.max(...view.rows.map(r => r.v));
+
+    rowsEl.innerHTML = "";
+    tableBody.innerHTML = "";
+
+    view.rows.forEach(r => {
+      const pct = (r.v / max) * 100;
+
+      const row = document.createElement("div");
+      row.className = "viz-row" + (r.hi ? " hi" : "");
+      row.setAttribute("role", "listitem");
+      row.tabIndex = 0;
+
+      const name = document.createElement("div");
+      name.className = "cname";
+      name.textContent = r.c;
+
+      const track = document.createElement("div");
+      track.className = "viz-track";
+      const bar = document.createElement("div");
+      bar.className = "viz-bar";
+      bar.style.width = pct + "%";
+      track.appendChild(bar);
+
+      const val = document.createElement("div");
+      val.className = "viz-val";
+      val.textContent = fmt(r.v) + (view.unit === "%" ? "%" : "");
+
+      row.appendChild(name);
+      row.appendChild(track);
+      row.appendChild(val);
+
+      function showTip(evt) {
+        tip.innerHTML = "";
+        const strong = document.createElement("b");
+        strong.textContent = fmt(r.v) + (view.unit === "%" ? "% (spread)" : " puntos");
+        const line1 = document.createElement("div");
+        const nameSpan = document.createTextNode(r.c + ": ");
+        line1.appendChild(nameSpan);
+        line1.appendChild(strong);
+        const srcSpan = document.createElement("span");
+        srcSpan.className = "src";
+        srcSpan.textContent = r.src;
+        tip.appendChild(line1);
+        tip.appendChild(srcSpan);
+        tip.classList.add("show");
+        positionTip(evt);
+      }
+      function positionTip(evt) {
+        const x = (evt && evt.clientX != null) ? evt.clientX : row.getBoundingClientRect().right;
+        const y = (evt && evt.clientY != null) ? evt.clientY : row.getBoundingClientRect().top;
+        const tw = 240;
+        let left = x + 14;
+        if (left + tw > window.innerWidth - 8) left = x - tw - 14;
+        tip.style.left = left + "px";
+        tip.style.top = (y + 14) + "px";
+      }
+      function hideTip() { tip.classList.remove("show"); }
+
+      row.addEventListener("pointermove", showTip);
+      row.addEventListener("pointerenter", showTip);
+      row.addEventListener("pointerleave", hideTip);
+      row.addEventListener("focus", (e) => showTip(null));
+      row.addEventListener("blur", hideTip);
+
+      rowsEl.appendChild(row);
+
+      const tr = document.createElement("tr");
+      const tdC = document.createElement("td");
+      tdC.textContent = r.c;
+      const tdV = document.createElement("td");
+      tdV.textContent = fmt(r.v) + (view.unit === "%" ? "%" : "");
+      const tdS = document.createElement("td");
+      tdS.textContent = r.src;
+      tr.appendChild(tdC); tr.appendChild(tdV); tr.appendChild(tdS);
+      tableBody.appendChild(tr);
+    });
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      buttons.forEach(b => b.setAttribute("aria-pressed", "false"));
+      btn.setAttribute("aria-pressed", "true");
+      render(btn.dataset.view);
+    });
+  });
+
+  render("minorista");
+})();
+</script>
